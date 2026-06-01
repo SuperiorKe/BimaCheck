@@ -1,0 +1,12 @@
+{
+  "name": "bimacheck",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Trustworthy instant hospi-cash payout for the informal sector (Africa's Talking Insurtech Hackathon)",
+  "scripts": {
+    "test": "node --test",
+    "start": "node src/index.js"
+  },
+  "license": "UNLICENSED"
+}

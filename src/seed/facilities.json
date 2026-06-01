@@ -1,0 +1,5 @@
+{
+  "KIBERA":   { "code": "KIBERA",   "name": "Kibera Clinic",              "lat": -1.3133, "lng": 36.7919 },
+  "THIKA":    { "code": "THIKA",    "name": "Thika Health Centre",        "lat": -1.0333, "lng": 37.0693 },
+  "KENYATTA": { "code": "KENYATTA", "name": "Kenyatta National Hospital", "lat": -1.3010, "lng": 36.8060 }
+}
