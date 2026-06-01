@@ -9,9 +9,10 @@
 // complete, un-failable demo. The payments layer will replace the marked-here
 // section with a Daraja B2C request whose result callback (or 8s fallback) calls
 // markPaid(); the single-shot guard already makes that safe.
-import { getClaim, buildCtx, setDecision, markPaid } from './db.js';
+import { getClaim, buildCtx, setDecision } from './db.js';
 import { decideClaim } from './engine/index.js';
-import { approvedMessage, heldMessage, sendSms } from './sms.js';
+import { heldMessage, sendSms } from './sms.js';
+import { requestPayout } from './mpesa.js';
 
 export async function processClaim(claimId) {
   const claim = getClaim(claimId);
@@ -25,8 +26,7 @@ export async function processClaim(claimId) {
     return;
   }
 
-  // APPROVED — payout placeholder (replaced by Daraja B2C in the payments layer).
-  if (markPaid(claimId)) {
-    await sendSms(claim.member, approvedMessage(getClaim(claimId)));
-  }
+  // APPROVED — request the B2C payout. Confirmation (PAID + approved SMS) happens
+  // via the Daraja result callback or the 8s fallback; both are single-shot.
+  await requestPayout(getClaim(claimId));
 }

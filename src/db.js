@@ -27,7 +27,8 @@ db.exec(`
     status        TEXT    NOT NULL DEFAULT 'PENDING',
     decision      TEXT,
     reason        TEXT,
-    mpesa_status  TEXT
+    mpesa_status  TEXT,
+    conversation_id TEXT
   );
 `);
 
@@ -43,6 +44,7 @@ function rowToClaim(row) {
     decision: row.decision,
     reason: row.reason,
     mpesaStatus: row.mpesa_status,
+    conversationId: row.conversation_id,
   };
 }
 
@@ -86,6 +88,17 @@ export function markPaid(id) {
 
 export function setMpesaStatus(id, status) {
   db.prepare(`UPDATE claims SET mpesa_status = ? WHERE id = ?`).run(status, id);
+}
+
+// Map the Daraja-assigned ConversationID to our claim, so the async result
+// callback can find which claim it belongs to.
+export function linkConversation(id, conversationId) {
+  db.prepare(`UPDATE claims SET conversation_id = ? WHERE id = ?`).run(conversationId, id);
+}
+
+export function getClaimIdByConversation(conversationId) {
+  const r = db.prepare(`SELECT id FROM claims WHERE conversation_id = ?`).get(conversationId);
+  return r ? r.id : null;
 }
 
 export function buildCtx(claim) {
