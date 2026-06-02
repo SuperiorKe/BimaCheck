@@ -37,10 +37,12 @@ export function haversineKm(a, b) {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+const normPhone = (n) => String(n || '').replace(/^\+/, '');
+
 // RED FLAG: no hospital admission on record for this member at the claimed facility.
 export function missingAdmission(claim, ctx) {
   const found = (ctx.admissions || []).some(
-    (a) => a.member === claim.member && a.facilityCode === claim.facilityCode
+    (a) => normPhone(a.member) === normPhone(claim.member) && a.facilityCode === claim.facilityCode
   );
   const name = ctx.facilities?.[claim.facilityCode]?.name || claim.facilityCode;
   return {
