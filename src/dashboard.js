@@ -11,8 +11,11 @@ export const dashboardHtml = `<!doctype html>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
 <style>
-  :root { --bg:#0f1115; --panel:#171a21; --line:#262b35; --txt:#e6e9ef; --mut:#8b93a3;
-          --green:#1f9d5c; --amber:#c98a16; --red:#c0392b; --grey:#3a4150;
+  :root { --bg:#0A0C0F; --panel:#111418; --raised:#161a22; --line:#1E2430;
+          --txt:#D8DDE8; --dim:#8C95A8; --mut:#5A6478;
+          --paid:#00C896; --paid-bg:rgba(0,200,150,.09);
+          --held:#E8A020; --held-bg:rgba(232,160,32,.10);
+          --pend:#4A5878; --failed:#C43F3F; --fail-bg:rgba(196,63,63,.10);
           --mono:"IBM Plex Mono","Courier New",monospace;
           --sans:"DM Sans",system-ui,sans-serif; }
   * { box-sizing:border-box; }
