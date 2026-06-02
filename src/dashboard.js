@@ -30,21 +30,34 @@ export const dashboardHtml = `<!doctype html>
   .counts { margin-left:auto; display:flex; align-items:center; gap:18px; }
   .counts span { font:400 12px/1 var(--sans); color:var(--mut); }
   .counts b { font:600 13px/1 var(--mono); color:var(--txt); font-variant-numeric:tabular-nums; }
-  main { padding:20px 28px; }
+  main { padding:16px 20px; }
   table { width:100%; border-collapse:collapse; }
-  th,td { text-align:left; padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
-  th { color:var(--mut); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.4px; }
-  td.reason { color:var(--mut); max-width:520px; }
-  .num { font-variant-numeric:tabular-nums; color:var(--mut); }
-  .pill { display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:600; }
-  .PAID,.APPROVED { background:rgba(31,157,92,.16); color:#5bd99a; }
-  .HELD { background:rgba(201,138,22,.16); color:#e7b75a; }
-  .PENDING { background:rgba(120,130,150,.16); color:#aab2c2; }
-  .FAILED { background:rgba(192,57,43,.18); color:#ef7c70; }
-  .empty { color:var(--mut); padding:40px 0; text-align:center; }
-  .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--green);
-         margin-right:6px; vertical-align:middle; animation:blink 1.6s infinite; }
-  @keyframes blink { 50% { opacity:.3; } }
+  thead th { text-align:left; padding:9px 16px 9px 20px; border-bottom:1px solid var(--line);
+             background:var(--panel); color:var(--mut); font:600 11px/1 var(--mono);
+             text-transform:uppercase; letter-spacing:.06em; }
+  tbody tr { border-bottom:1px solid var(--line); border-left:3px solid transparent; }
+  tbody tr:hover { background:var(--raised); }
+  tbody tr.st-paid { border-left-color:var(--paid); }
+  tbody tr.st-held { border-left-color:var(--held); background:var(--held-bg); }
+  tbody tr.st-held:hover { background:rgba(232,160,32,.14); }
+  tbody tr.st-pend { border-left-color:var(--pend); }
+  tbody tr.st-fail { border-left-color:var(--failed); background:var(--fail-bg); }
+  tbody td { text-align:left; padding:11px 16px 11px 20px; vertical-align:top;
+             font:400 13px/1.45 var(--sans); color:var(--dim); }
+  td.mono { font:400 12px/1.45 var(--mono); }
+  td.num  { font:400 12px/1 var(--mono); color:var(--mut); }
+  td.reason { color:var(--mut); max-width:480px; font-size:12px; }
+  td.payout { font:400 12px/1 var(--mono); }
+  td.payout.paid { color:var(--paid); }
+  .dec { font:600 11px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; }
+  .dec.PAID,.dec.APPROVED { color:var(--paid); }
+  .dec.HELD { color:var(--held); }
+  .dec.PENDING { color:var(--pend); }
+  .dec.FAILED { color:var(--failed); }
+  .empty { color:var(--mut); padding:40px 0; text-align:center; font-size:13px; }
+  .dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:var(--paid);
+         margin-right:6px; vertical-align:middle; animation:blink 2s ease-in-out infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
 </style>
 </head>
 <body>
@@ -72,7 +85,9 @@ export const dashboardHtml = `<!doctype html>
 <script>
   const mask = (m) => (m ? m.slice(0, 6) + '****' + m.slice(-2) : '');
   const time = (ts) => new Date(ts).toLocaleTimeString();
-  const pill = (s) => '<span class="pill ' + s + '">' + s + '</span>';
+  const stripeClass = (s) => s === 'PAID' || s === 'APPROVED' ? 'st-paid'
+    : s === 'HELD' ? 'st-held' : s === 'FAILED' ? 'st-fail' : 'st-pend';
+  const dec = (s) => '<span class="dec ' + s + '">' + s + '</span>';
 
   async function load() {
     let claims = [];
@@ -83,14 +98,15 @@ export const dashboardHtml = `<!doctype html>
     document.getElementById('c-pending').textContent = by('PENDING');
     document.getElementById('empty').hidden = claims.length > 0;
     document.getElementById('rows').innerHTML = claims.map((c) =>
-      '<tr>' +
+      '<tr class="' + stripeClass(c.status) + '">' +
       '<td class="num">' + c.id + '</td>' +
-      '<td class="num">' + time(c.createdAt) + '</td>' +
-      '<td>' + mask(c.member) + '</td>' +
-      '<td>' + c.facilityCode + '</td>' +
-      '<td>' + pill(c.status) + '</td>' +
+      '<td class="mono">' + time(c.createdAt) + '</td>' +
+      '<td class="mono">' + mask(c.member) + '</td>' +
+      '<td class="mono">' + c.facilityCode + '</td>' +
+      '<td>' + dec(c.status) + '</td>' +
       '<td class="reason">' + (c.reason ? c.reason : '—') + '</td>' +
-      '<td>' + (c.mpesaStatus ? pill(c.mpesaStatus) : '—') + '</td>' +
+      '<td class="payout' + (c.mpesaStatus === 'PAID' ? ' paid' : '') + '">' +
+        (c.mpesaStatus === 'PAID' ? 'KES 2,000' : (c.mpesaStatus || '—')) + '</td>' +
       '</tr>'
     ).join('');
   }
