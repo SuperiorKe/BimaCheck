@@ -88,6 +88,18 @@ No credentials required to run the full demo flow:
 
 Copy `.env.example` to `.env`. All credentials default to empty (offline/dry-run). For live operation set `AT_API_KEY`, Daraja keys, and `PUBLIC_CALLBACK_BASE` (a pre-provisioned HTTPS box — Safaricom blocks ngrok).
 
+## Gotchas
+
+- **Dashboard changes need a full server restart.** `src/dashboard.js` exports `dashboardHtml` as a template literal baked at module import time — there is no hot reload. After editing it, restart `npm start` or the browser keeps getting the old HTML. Symptom: the file has your changes but the page doesn't.
+- **A stale `npm start` can keep holding port 3000.** A crashed or backgrounded server can leave a zombie process on the port, so the "restarted" server fails to bind and you silently keep hitting the old one. If a restart "didn't take", run `npx kill-port 3000` then `npm start`. On Windows, `netstat -ano | findstr :3000` then `taskkill /PID <pid> /F` also works.
+- **The claims DB is in-memory** (`:memory:`), so it resets on every restart. Demo/test sequences that depend on prior claims (geo, duplicate rules) need a known-empty DB to be deterministic — see the `/smoke` skill.
+
+## Project skills
+
+`.claude/skills/` holds project-scoped slash commands:
+- `/smoke` — drive the four-scenario claim gauntlet against a running server and assert each lands in the right state. The demo, and the fastest full-pipeline check.
+- `/go-live` — wire AT + Daraja credentials and verify one real B2C payout before a demo.
+
 ## Deferred work
 
 See `TODOS.md` for post-hackathon items: runtime RSA `SecurityCredential` generator for production Daraja, a 4th `amountVelocity` rule, and AT Voice callbacks.
