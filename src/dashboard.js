@@ -21,12 +21,15 @@ export const dashboardHtml = `<!doctype html>
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--txt);
          font:14px/1.55 var(--sans); -webkit-font-smoothing:antialiased; }
-  header { padding:20px 28px; border-bottom:1px solid var(--line); display:flex;
-           align-items:baseline; gap:16px; flex-wrap:wrap; }
-  header h1 { margin:0; font-size:20px; letter-spacing:.2px; }
-  header .sub { color:var(--mut); font-size:13px; }
-  .counts { margin-left:auto; display:flex; gap:18px; font-size:13px; color:var(--mut); }
-  .counts b { color:var(--txt); font-variant-numeric:tabular-nums; }
+  header { height:44px; padding:0 20px; border-bottom:1px solid var(--line);
+           background:var(--panel); display:flex; align-items:center; gap:0; flex-shrink:0; }
+  header h1 { margin:0; font:600 11px/1 var(--mono); letter-spacing:.12em;
+              text-transform:uppercase; color:var(--mut); }
+  .hdr-sep { width:1px; height:16px; background:var(--line); margin:0 14px; flex-shrink:0; }
+  header .sub { color:var(--mut); font:300 12px/1 var(--sans); }
+  .counts { margin-left:auto; display:flex; align-items:center; gap:18px; }
+  .counts span { font:400 12px/1 var(--sans); color:var(--mut); }
+  .counts b { font:600 13px/1 var(--mono); color:var(--txt); font-variant-numeric:tabular-nums; }
   main { padding:20px 28px; }
   table { width:100%; border-collapse:collapse; }
   th,td { text-align:left; padding:11px 12px; border-bottom:1px solid var(--line); vertical-align:top; }
@@ -47,12 +50,13 @@ export const dashboardHtml = `<!doctype html>
 <body>
 <header>
   <h1>BimaCheck</h1>
+  <div class="hdr-sep"></div>
   <span class="sub">Claims integrity console — deterministic, auditable, never auto-denies</span>
   <div class="counts">
-    <span><span class="dot"></span>live</span>
     <span>paid <b id="c-paid">0</b></span>
     <span>held <b id="c-held">0</b></span>
     <span>pending <b id="c-pending">0</b></span>
+    <span><span class="dot"></span>live</span>
   </div>
 </header>
 <main>
