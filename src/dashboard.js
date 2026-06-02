@@ -7,12 +7,17 @@ export const dashboardHtml = `<!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>BimaCheck — Claims Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
 <style>
   :root { --bg:#0f1115; --panel:#171a21; --line:#262b35; --txt:#e6e9ef; --mut:#8b93a3;
-          --green:#1f9d5c; --amber:#c98a16; --red:#c0392b; --grey:#3a4150; }
+          --green:#1f9d5c; --amber:#c98a16; --red:#c0392b; --grey:#3a4150;
+          --mono:"IBM Plex Mono","Courier New",monospace;
+          --sans:"DM Sans",system-ui,sans-serif; }
   * { box-sizing:border-box; }
   body { margin:0; background:var(--bg); color:var(--txt);
-         font:15px/1.5 -apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; }
+         font:14px/1.55 var(--sans); -webkit-font-smoothing:antialiased; }
   header { padding:20px 28px; border-bottom:1px solid var(--line); display:flex;
            align-items:baseline; gap:16px; flex-wrap:wrap; }
   header h1 { margin:0; font-size:20px; letter-spacing:.2px; }
