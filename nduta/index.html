@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>For Nduta 💕</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      background: linear-gradient(135deg, #1a0a2e 0%, #2d1b4e 40%, #1a0a2e 100%);
+      font-family: 'Georgia', serif;
+      color: #fff;
+      overflow-x: hidden;
+    }
+
+    /* Floating hearts background */
+    .hearts-bg {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+
+    .heart-particle {
+      position: absolute;
+      font-size: 1.2rem;
+      opacity: 0;
+      animation: floatUp linear infinite;
+    }
+
+    @keyframes floatUp {
+      0%   { transform: translateY(100vh) scale(0.5) rotate(0deg); opacity: 0; }
+      10%  { opacity: 0.6; }
+      90%  { opacity: 0.3; }
+      100% { transform: translateY(-20vh) scale(1) rotate(20deg); opacity: 0; }
+    }
+
+    /* Main layout */
+    .container {
+      position: relative;
+      z-index: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 24px 20px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Header */
+    .header {
+      text-align: center;
+      padding: 32px 20px 24px;
+    }
+
+    .greeting-label {
+      font-size: 0.9rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #f9a8d4;
+      opacity: 0.8;
+      margin-bottom: 10px;
+    }
+
+    .name {
+      font-size: 2.8rem;
+      font-weight: bold;
+      background: linear-gradient(135deg, #f9a8d4, #fbbf24, #f9a8d4);
+      background-size: 200% 200%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: shimmer 3s ease-in-out infinite;
+      line-height: 1.1;
+    }
+
+    @keyframes shimmer {
+      0%, 100% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+    }
+
+    .date-line {
+      font-size: 0.85rem;
+      color: #c4b5fd;
+      margin-top: 8px;
+      opacity: 0.7;
+    }
+
+    /* Cards */
+    .card {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(249, 168, 212, 0.2);
+      border-radius: 20px;
+      padding: 24px 22px;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .card-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: #f9a8d4;
+      margin-bottom: 14px;
+      opacity: 0.7;
+    }
+
+    .card-label .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #f9a8d4;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.7); }
+    }
+
+    /* Days together */
+    .days-card {
+      text-align: center;
+    }
+
+    .days-number {
+      font-size: 4rem;
+      font-weight: bold;
+      color: #fbbf24;
+      line-height: 1;
+      animation: heartbeat 1.8s ease-in-out infinite;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      14%       { transform: scale(1.05); }
+      28%       { transform: scale(1); }
+      42%       { transform: scale(1.03); }
+      56%       { transform: scale(1); }
+    }
+
+    .days-label {
+      font-size: 1rem;
+      color: #e9d5ff;
+      margin-top: 4px;
+      opacity: 0.8;
+    }
+
+    .days-sub {
+      font-size: 0.8rem;
+      color: #c4b5fd;
+      margin-top: 6px;
+      opacity: 0.6;
+    }
+
+    /* Message of the day */
+    .message-text {
+      font-size: 1.15rem;
+      line-height: 1.7;
+      color: #f3e8ff;
+      font-style: italic;
+      position: relative;
+      padding-left: 18px;
+    }
+
+    .message-text::before {
+      content: '"';
+      position: absolute;
+      left: 0;
+      top: -4px;
+      font-size: 2.5rem;
+      color: #f9a8d4;
+      line-height: 1;
+      opacity: 0.5;
+    }
+
+    /* Dare card */
+    .dare-card { border-color: rgba(251, 191, 36, 0.25); }
+    .dare-card .card-label { color: #fbbf24; }
+    .dare-card .card-label .dot { background: #fbbf24; }
+
+    .dare-text {
+      font-size: 1.05rem;
+      line-height: 1.65;
+      color: #fef9c3;
+    }
+
+    .dare-badge {
+      display: inline-block;
+      margin-top: 14px;
+      background: rgba(251, 191, 36, 0.15);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 0.78rem;
+      color: #fbbf24;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .dare-badge:hover { background: rgba(251, 191, 36, 0.25); transform: scale(1.02); }
+
+    /* Mood / reaction */
+    .mood-card { border-color: rgba(167, 139, 250, 0.25); }
+    .mood-card .card-label { color: #a78bfa; }
+    .mood-card .card-label .dot { background: #a78bfa; }
+
+    .mood-options {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .mood-btn {
+      flex: 1;
+      min-width: 70px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(167, 139, 250, 0.2);
+      border-radius: 12px;
+      padding: 12px 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: #fff;
+      font-size: 0.85rem;
+    }
+
+    .mood-btn .emoji { font-size: 1.6rem; display: block; margin-bottom: 4px; }
+    .mood-btn:hover, .mood-btn.active {
+      background: rgba(167, 139, 250, 0.2);
+      border-color: #a78bfa;
+      transform: translateY(-2px);
+    }
+
+    .mood-response {
+      margin-top: 14px;
+      font-size: 0.9rem;
+      color: #e9d5ff;
+      line-height: 1.5;
+      min-height: 24px;
+      display: none;
+      animation: fadeIn 0.4s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding-top: 8px;
+    }
+
+    .footer-heart {
+      font-size: 1.4rem;
+      animation: heartbeat 1.8s ease-in-out infinite;
+    }
+
+    .footer-text {
+      font-size: 0.8rem;
+      color: #c4b5fd;
+      margin-top: 6px;
+      opacity: 0.5;
+    }
+
+    /* Day counter badge */
+    .day-counter-badge {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      background: rgba(249, 168, 212, 0.15);
+      border: 1px solid rgba(249, 168, 212, 0.3);
+      border-radius: 999px;
+      padding: 6px 14px;
+      font-size: 0.75rem;
+      color: #f9a8d4;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating hearts -->
+  <div class="hearts-bg" id="heartsBg"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="greeting-label" id="greetingLabel">Good morning</div>
+      <div class="name">Nduta 💕</div>
+      <div class="date-line" id="dateLine"></div>
+    </div>
+
+    <!-- Days together -->
+    <div class="card days-card">
+      <div class="card-label"><span class="dot"></span>We've been together</div>
+      <div class="days-number" id="daysCount">0</div>
+      <div class="days-label" id="daysLabel">days</div>
+      <div class="days-sub" id="daysHours"></div>
+    </div>
+
+    <!-- Message of the day -->
+    <div class="card">
+      <div class="card-label"><span class="dot"></span>Today's message for you</div>
+      <div class="message-text" id="dailyMessage"></div>
+    </div>
+
+    <!-- Daily dare -->
+    <div class="card dare-card">
+      <div class="card-label"><span class="dot"></span>Today's dare ✨</div>
+      <div class="dare-text" id="dailyDare"></div>
+      <div class="dare-badge" id="completeDare" onclick="completeDare()">Mark as done 🎉</div>
+    </div>
+
+    <!-- Mood check-in -->
+    <div class="card mood-card">
+      <div class="card-label"><span class="dot"></span>How are you feeling?</div>
+      <div class="mood-options">
+        <button class="mood-btn" onclick="selectMood('amazing')">
+          <span class="emoji">😍</span>Amazing
+        </button>
+        <button class="mood-btn" onclick="selectMood('good')">
+          <span class="emoji">😊</span>Good
+        </button>
+        <button class="mood-btn" onclick="selectMood('meh')">
+          <span class="emoji">😐</span>Meh
+        </button>
+        <button class="mood-btn" onclick="selectMood('miss-you')">
+          <span class="emoji">🥺</span>Missing you
+        </button>
+      </div>
+      <div class="mood-response" id="moodResponse"></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="footer-heart">❤️</div>
+      <div class="footer-text">Made just for you, Nduta</div>
+    </div>
+  </div>
+
+  <!-- Fixed day badge -->
+  <div class="day-counter-badge" id="dayBadge">Day 1</div>
+
+  <script>
+    // ──────────────────────────────────────────────
+    //  CONFIGURATION — Edit this section!
+    // ──────────────────────────────────────────────
+
+    // The day you two started dating
+    const START_DATE = new Date('2026-06-12');
+
+    // Your daily love messages for Nduta — one per day.
+    // They cycle: day 1 → messages[0], day 2 → messages[1], etc.
+    // Add as many as you want. Replace these with your own!
+    const MESSAGES = [
+      "Every morning I wake up grateful that you're in my life. You make ordinary days feel like something special.",
+      "I love the way you care — checking if I took my medicine, sending good morning hearts. You make me feel so loved.",
+      "Distance doesn't change anything when it comes to you. You're on my mind all day, every day.",
+      "You once said you couldn't believe the day would end without seeing me. I feel the same way, every single day.",
+      "Thank you for being patient with me, for being sweet, for being you.",
+      "I don't need anything fancy — just you, your voice, your laugh. That's everything.",
+      "Some days are hard, but knowing you're there at the end of them makes everything better.",
+      "You're the kind of person who makes someone want to be a better person. That's what you do for me.",
+      "I still smile every time I see your name on my screen.",
+      "Good things happen to good people. You're proof of that — and I'm lucky you happened to me.",
+      "I love how you love me. Simply, honestly, purely. Thank you, Nduta.",
+      "Thinking about our next meet already. I'm counting down.",
+      "You bring light into my days without even trying. That's a rare thing.",
+      "I could have a terrible day and your message would flip everything. You have that power.",
+      "I appreciate every little thing you do — you probably don't even notice half of it. I do.",
+      "There's no one I'd rather send a 'what's up for today?' to.",
+      "You're my favorite person to talk to. My favorite person, full stop.",
+      "I love you not just for who you are, but for who I am when I'm with you.",
+      "Can't wait to see you again. Every reunion feels like the first time.",
+      "You're the first thing I want to talk to in the morning and the last thing on my mind at night.",
+      "I'm so proud of you. Every day, in every way.",
+      "I notice how hard you try. I see it. And it means everything.",
+      "Thank you for choosing me. I don't take that lightly.",
+      "You once said 'you are always welcome' — that tiny thing stayed with me. You're so warm.",
+      "You're worth every mile, every long phone call, every moment of missing you.",
+      "I love you — not because I have to, but because I keep choosing to, every day.",
+      "You have the most caring heart. I hope you know that.",
+      "I'm excited about our future. More than you know.",
+      "If I had to do it all over again, I'd still choose you. Every time.",
+      "Just wanted you to know: you're doing amazingly. In everything. I see you.",
+    ];
+
+    // Daily dares / questions — one per day, cycling.
+    // These are meant to be fun, sweet, or playful!
+    const DARES = [
+      "Send me a voice note telling me one thing you love about us.",
+      "Set my name as your phone wallpaper for 24 hours 😏",
+      "Tell me one memory of us that always makes you smile.",
+      "Send me a selfie right now — no filter, no preparation. Just you.",
+      "Name three things that remind you of me in your everyday life.",
+      "Write me a 3-line poem. It doesn't have to be good. Just real.",
+      "Tell me one thing you've never told me before.",
+      "Send a voice note saying 'I love you' in the most dramatic way possible.",
+      "Screenshot your favorite conversation between us and send it to me.",
+      "Tell me your honest first impression of me when we first met.",
+      "Send me a song that makes you think of me.",
+      "Rate me out of 10 — and be honest 😂 (then explain the score).",
+      "Tell me one thing you wish I did more of.",
+      "Send me a photo of what you're looking at right now.",
+      "Tell me about a moment when you realized you really liked me.",
+      "Dare: call me — just to say one nice thing — and hang up.",
+      "Tell me your favorite physical feature of mine. Be specific.",
+      "Name something you want us to do together that we haven't done yet.",
+      "Write out your perfect day with me. Describe it in detail.",
+      "Send me a 'thinking of you' message at exactly 10PM tonight.",
+      "Tell me: what's one habit of mine you actually love?",
+      "Name the exact moment you knew I was someone special to you.",
+      "Record a 10-second video of your current surroundings and send it.",
+      "Tell me something I do that always makes you feel loved.",
+      "What would you title our relationship if it were a movie? Why?",
+      "Say 'I miss you' in 5 different languages (use Google Translate if needed 😄).",
+      "Describe me in exactly 5 words.",
+      "Send me a meme that summarizes our relationship.",
+      "Tell me your top 3 favorite things about us as a couple.",
+      "Write down one goal we should work towards together this year.",
+    ];
+
+    // Mood responses — what you say back depending on how she feels
+    const MOOD_RESPONSES = {
+      'amazing': "That makes me so happy! Keep that energy — you deserve to feel amazing every day 😍",
+      'good':    "Good is great! I hope your day stays that way, or gets even better 😊",
+      'meh':     "That's okay. Some days are like that. Just know I'm thinking about you and you're not alone in it 💜",
+      'miss-you': "I miss you too. So much. But we'll see each other soon — and it'll be worth the wait 🥺❤️",
+    };
+
+    // ──────────────────────────────────────────────
+    //  APP LOGIC — No need to edit below this line
+    // ──────────────────────────────────────────────
+
+    function getDayNumber() {
+      const now = new Date();
+      const start = new Date(START_DATE);
+      start.setHours(0, 0, 0, 0);
+      now.setHours(0, 0, 0, 0);
+      const diff = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+      return Math.max(1, diff + 1);
+    }
+
+    function getDaysSince() {
+      const now = new Date();
+      const start = new Date(START_DATE);
+      const diffMs = now - start;
+      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      return { days: Math.max(0, days), hours: Math.max(0, hours) };
+    }
+
+    function getGreeting() {
+      const h = new Date().getHours();
+      if (h < 12) return 'Good morning';
+      if (h < 17) return 'Good afternoon';
+      if (h < 21) return 'Good evening';
+      return 'Good night';
+    }
+
+    function getItem(arr, dayNum) {
+      return arr[(dayNum - 1) % arr.length];
+    }
+
+    function formatDate(d) {
+      return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function init() {
+      const dayNum = getDayNumber();
+      const { days, hours } = getDaysSince();
+      const now = new Date();
+
+      document.getElementById('greetingLabel').textContent = getGreeting();
+      document.getElementById('dateLine').textContent = formatDate(now);
+
+      document.getElementById('daysCount').textContent = days;
+      document.getElementById('daysLabel').textContent = days === 1 ? 'day together' : 'days together';
+      document.getElementById('daysHours').textContent = `${hours} hour${hours !== 1 ? 's' : ''} and counting…`;
+
+      document.getElementById('dailyMessage').textContent = getItem(MESSAGES, dayNum);
+      document.getElementById('dailyDare').textContent = getItem(DARES, dayNum);
+      document.getElementById('dayBadge').textContent = `Day ${dayNum}`;
+
+      // Restore dare completion state
+      const dareKey = `dare_done_${dayNum}`;
+      if (localStorage.getItem(dareKey)) {
+        markDareCompleted();
+      }
+
+      // Restore mood
+      const moodKey = `mood_${now.toDateString()}`;
+      const savedMood = localStorage.getItem(moodKey);
+      if (savedMood) {
+        applyMood(savedMood, false);
+      }
+    }
+
+    function completeDare() {
+      const dayNum = getDayNumber();
+      localStorage.setItem(`dare_done_${dayNum}`, '1');
+      markDareCompleted();
+    }
+
+    function markDareCompleted() {
+      const btn = document.getElementById('completeDare');
+      btn.textContent = '✅ Done! You\'re amazing';
+      btn.style.background = 'rgba(251, 191, 36, 0.3)';
+      btn.style.cursor = 'default';
+      btn.onclick = null;
+    }
+
+    function selectMood(mood) {
+      const moodKey = `mood_${new Date().toDateString()}`;
+      localStorage.setItem(moodKey, mood);
+      applyMood(mood, true);
+    }
+
+    function applyMood(mood, animate) {
+      document.querySelectorAll('.mood-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.getAttribute('onclick').includes(mood)) btn.classList.add('active');
+      });
+      const resp = document.getElementById('moodResponse');
+      resp.textContent = MOOD_RESPONSES[mood] || '';
+      resp.style.display = 'block';
+      if (animate) resp.style.animation = 'none', resp.offsetHeight, resp.style.animation = '';
+    }
+
+    // Floating hearts
+    function spawnHearts() {
+      const bg = document.getElementById('heartsBg');
+      const emojis = ['❤️', '💕', '💗', '💖', '✨', '💫', '🌸'];
+      for (let i = 0; i < 18; i++) {
+        const el = document.createElement('div');
+        el.className = 'heart-particle';
+        el.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.animationDuration = (8 + Math.random() * 10) + 's';
+        el.style.animationDelay = (Math.random() * 12) + 's';
+        el.style.fontSize = (0.8 + Math.random() * 1.2) + 'rem';
+        bg.appendChild(el);
+      }
+    }
+
+    spawnHearts();
+    init();
+
+    // Update hours counter every minute
+    setInterval(() => {
+      const { hours } = getDaysSince();
+      document.getElementById('daysHours').textContent = `${hours} hour${hours !== 1 ? 's' : ''} and counting…`;
+    }, 60000);
+  </script>
+</body>
+</html>
