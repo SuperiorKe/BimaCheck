@@ -19,6 +19,12 @@ import { config } from './config.js';
 
 const DARAJA_BASE = 'https://sandbox.safaricom.co.ke';
 
+// Daraja B2C PartyB must be a bare MSISDN (2547XXXXXXXX). Africa's Talking sends
+// the member as +254..., so strip the leading + (and any stray non-digits)
+// before it reaches Safaricom, or the request is rejected with "Invalid PartyB".
+// Mirrors normPhone() in engine/rules.js.
+const toMsisdn = (m) => String(m || '').replace(/\D/g, '');
+
 // Confirm a payout exactly once. Returns true only for the call that actually
 // transitioned the claim to PAID (and therefore sent the approved SMS).
 export async function confirmPayout(claimId) {
@@ -29,7 +35,7 @@ export async function confirmPayout(claimId) {
 }
 
 // Real Daraja transport: OAuth, then B2C payment request. Injectable for tests.
-async function darajaTransport(claim) {
+export async function darajaTransport(claim) {
   const basic = Buffer.from(`${config.daraja.key}:${config.daraja.secret}`).toString('base64');
   const tokenRes = await fetch(
     `${DARAJA_BASE}/oauth/v1/generate?grant_type=client_credentials`,
@@ -45,7 +51,7 @@ async function darajaTransport(claim) {
       CommandID: 'BusinessPayment',
       Amount: config.benefitKes,
       PartyA: config.daraja.shortcode,
-      PartyB: claim.member,
+      PartyB: toMsisdn(claim.member),
       Remarks: `BimaCheck hospi-cash claim ${claim.id}`,
       QueueTimeOutURL: `${config.daraja.callbackBase}/b2c/timeout`,
       ResultURL: `${config.daraja.callbackBase}/b2c/result`,

@@ -9,7 +9,7 @@ import {
   getClaimIdByConversation,
   __resetClaims,
 } from '../src/db.js';
-import { confirmPayout, requestPayout, b2cResult, b2cTimeout } from '../src/mpesa.js';
+import { confirmPayout, requestPayout, b2cResult, b2cTimeout, darajaTransport } from '../src/mpesa.js';
 
 const M = '254708374149';
 beforeEach(() => __resetClaims());
@@ -85,6 +85,28 @@ test('requestPayout (with creds) dispatches via transport, links conversation, a
   assert.equal(getClaim(id).mpesaStatus, 'REQUESTED');
   assert.equal(getClaimIdByConversation('CONV-X'), id);
   clearTimeout(timer); // don't let the 50ms fallback fire after the test
+});
+
+test('darajaTransport sends PartyB as a bare MSISDN, stripping the + AT prepends', async () => {
+  const id = insertClaim({ member: '+254708374149', facilityCode: 'KIBERA', claimType: 'hospicash', createdAt: Date.now() });
+  setDecision(id, 'APPROVED', null);
+
+  const calls = [];
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    calls.push({ url: String(url), opts });
+    if (String(url).includes('/oauth/')) return { json: async () => ({ access_token: 'tok' }) };
+    return { json: async () => ({ ConversationID: 'CONV-Z', ResponseCode: '0' }) };
+  };
+  try {
+    await darajaTransport(getClaim(id));
+  } finally {
+    globalThis.fetch = realFetch;
+  }
+
+  const payReq = calls.find((c) => c.url.includes('/b2c/'));
+  const body = JSON.parse(payReq.opts.body);
+  assert.equal(body.PartyB, '254708374149'); // not +254708374149 -> avoids 400.002.02 Invalid PartyB
 });
 
 test('requestPayout (no creds) dry-runs and confirms immediately', async () => {
