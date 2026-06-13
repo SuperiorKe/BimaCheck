@@ -5,12 +5,20 @@ import test, { beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { insertClaim, getClaim, __resetClaims } from '../src/db.js';
 import { processClaim } from '../src/worker.js';
+import { config } from '../src/config.js';
 
 const M = '254708374149'; // seeded with admissions at KIBERA and THIKA
 const t0 = Date.parse('2026-06-25T09:00:00Z');
 const min = (n) => n * 60 * 1000;
 
-beforeEach(() => __resetClaims());
+beforeEach(() => {
+  __resetClaims();
+  // Force offline/dry-run so the suite is deterministic regardless of a local
+  // .env. Real Daraja creds would route payout through the live B2C path
+  // (status stays REQUESTED until the 8s fallback, not PAID) and fire real SMS.
+  config.daraja.key = '';
+  config.at.apiKey = '';
+});
 
 test('clean claim (admission on record, no prior) -> APPROVED + PAID', async () => {
   const id = insertClaim({ member: M, facilityCode: 'KIBERA', claimType: 'hospicash', createdAt: t0 });

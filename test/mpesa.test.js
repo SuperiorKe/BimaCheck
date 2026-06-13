@@ -12,7 +12,13 @@ import {
 import { confirmPayout, requestPayout, b2cResult, b2cTimeout, darajaTransport } from '../src/mpesa.js';
 
 const M = '254708374149';
-beforeEach(() => __resetClaims());
+beforeEach(() => {
+  __resetClaims();
+  // Force offline/dry-run regardless of a local .env; individual tests opt into
+  // the live branch by setting config.daraja.key themselves.
+  config.daraja.key = '';
+  config.at.apiKey = '';
+});
 
 function approvedClaim() {
   const id = insertClaim({ member: M, facilityCode: 'KIBERA', claimType: 'hospicash', createdAt: Date.now() });
