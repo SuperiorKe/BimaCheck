@@ -21,6 +21,17 @@ curl -s localhost:3000/api/claims
 
 Requires **Node 24+** — uses `node:sqlite`, `node:test`, and `process.loadEnvFile` (all built-in, zero native build).
 
+## Commit conventions
+
+Use Conventional Commits. Every subject is `type(scope): summary`, imperative mood, lower case, no trailing full stop.
+
+- **Types:** `feat`, `fix`, `refactor`, `test`, `docs`, `style`, `chore`, `perf`.
+- **Scope** (optional): the subsystem touched, such as `engine`, `ussd`, `mpesa`, `queue`, `dashboard`, `design`, `seed`. Example: `feat(mpesa): add B2C timeout fallback`.
+- One logical change per commit. Keep the subject under about 72 characters.
+- Only `feat` and `fix` imply a behaviour change a user would notice. Everything else is internal.
+
+`/ship` and the CHANGELOG tooling parse this prefix, so it is not cosmetic. The early June 1 commits use prose subjects like "Add ..."; they are already pushed and stay as they are. From `v0.1.0` onward, Conventional Commits only.
+
 ## Architecture
 
 BimaCheck is a hospi-cash claims processor for the Africa's Talking Insurtech Hackathon. A USSD caller files a claim; a background worker runs deterministic fraud rules and either pays the member via M-Pesa B2C or holds the claim with a plain-language reason. Nothing auto-denies.
