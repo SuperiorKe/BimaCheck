@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Nduta's Garden 🌸</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: #000;
+      overflow: hidden;
+      height: 100dvh;
+      user-select: none;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100dvh;
+      cursor: crosshair;
+    }
+
+    /* ── Overlay layer ─────────────────────────────────── */
+    #overlay {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      z-index: 10;
+    }
+
+    /* ── Top bar ───────────────────────────────────────── */
+    #topbar {
+      padding: 16px 20px 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .name-block { pointer-events: none; }
+    .greeting {
+      font-size: 0.7rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+    }
+    .her-name {
+      font-size: 1.9rem;
+      color: #fff;
+      font-style: italic;
+      text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+    }
+
+    .days-block {
+      text-align: right;
+      pointer-events: none;
+    }
+    .days-num {
+      font-size: 2.2rem;
+      color: #fbbf24;
+      font-weight: bold;
+      line-height: 1;
+      text-shadow: 0 0 20px rgba(251,191,36,0.4);
+    }
+    .days-sub {
+      font-size: 0.65rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.5);
+    }
+
+    /* ── Presence pill ─────────────────────────────────── */
+    #presence {
+      position: fixed;
+      top: 16px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 0.72rem;
+      color: rgba(255,255,255,0.7);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      backdrop-filter: blur(8px);
+      pointer-events: none;
+      z-index: 20;
+      transition: opacity 0.4s;
+    }
+    #presence .dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: breathe 2s ease-in-out infinite;
+    }
+    @keyframes breathe {
+      0%,100% { opacity:1; transform:scale(1); }
+      50%      { opacity:0.4; transform:scale(0.7); }
+    }
+    #presence.offline .dot { background: #6b7280; animation: none; }
+
+    /* ── Thinking-of-you pulse (full screen) ───────────── */
+    #ping-overlay {
+      position: fixed; inset: 0;
+      pointer-events: none;
+      z-index: 30;
+      opacity: 0;
+      background: radial-gradient(ellipse at center, rgba(249,168,212,0.35) 0%, transparent 70%);
+      transition: opacity 0.6s;
+    }
+    #ping-overlay.show { opacity: 1; }
+    #ping-label {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff;
+      font-size: 1.1rem;
+      font-style: italic;
+      text-shadow: 0 2px 12px rgba(249,168,212,0.8);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.6s;
+    }
+    #ping-overlay.show + #ping-label,
+    #ping-label.show { opacity: 1; }
+
+    /* ── Bottom actions ────────────────────────────────── */
+    #actions {
+      padding: 0 16px 24px;
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+      pointer-events: all;
+    }
+
+    .btn {
+      background: rgba(0,0,0,0.45);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 999px;
+      color: #fff;
+      padding: 10px 18px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      font-family: inherit;
+    }
+    .btn:hover   { background: rgba(255,255,255,0.12); transform: translateY(-2px); }
+    .btn:active  { transform: scale(0.96); }
+    .btn.primary { border-color: rgba(249,168,212,0.5); }
+    .btn.primary:hover { box-shadow: 0 0 20px rgba(249,168,212,0.3); }
+    .btn.gold    { border-color: rgba(251,191,36,0.5); }
+    .btn.gold:hover { box-shadow: 0 0 20px rgba(251,191,36,0.3); }
+
+    /* ── Seed buds (time-locked) ───────────────────────── */
+    #seeds-strip {
+      position: fixed;
+      bottom: 88px;
+      left: 50%; transform: translateX(-50%);
+      display: flex;
+      gap: 10px;
+      pointer-events: all;
+    }
+    .seed-bud {
+      background: rgba(0,0,0,0.5);
+      border: 1px solid rgba(167,139,250,0.4);
+      border-radius: 12px;
+      padding: 8px 14px;
+      text-align: center;
+      cursor: pointer;
+      backdrop-filter: blur(8px);
+      transition: all 0.2s;
+      max-width: 120px;
+    }
+    .seed-bud:hover { border-color: #a78bfa; box-shadow: 0 0 16px rgba(167,139,250,0.3); }
+    .seed-bud .bud-emoji { font-size: 1.3rem; }
+    .seed-bud .bud-label { font-size: 0.65rem; color: #c4b5fd; margin-top: 3px; display: block; }
+    .seed-bud .bud-count { font-size: 0.6rem; color: rgba(255,255,255,0.4); margin-top: 2px; }
+    .seed-bud.bloomed { border-color: rgba(249,168,212,0.5); }
+    .seed-bud.bloomed .bud-emoji::after { content: ' 🌸'; }
+
+    /* ── Modals ─────────────────────────────────────────── */
+    .modal-bg {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.75);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(6px);
+      animation: fadeIn 0.25s ease;
+    }
+    .modal-bg.hide { display: none; }
+    @keyframes fadeIn {
+      from { opacity:0; } to { opacity:1; }
+    }
+    .modal {
+      background: #1a0a2e;
+      border: 1px solid rgba(249,168,212,0.25);
+      border-radius: 24px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 420px;
+      color: #fff;
+      animation: slideUp 0.3s ease;
+    }
+    @keyframes slideUp {
+      from { transform:translateY(20px); opacity:0; }
+      to   { transform:translateY(0); opacity:1; }
+    }
+    .modal h2 {
+      font-size: 1.25rem;
+      margin-bottom: 16px;
+      color: #f9a8d4;
+    }
+    .modal label {
+      display: block;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.5);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+      margin-top: 14px;
+    }
+    .modal input, .modal textarea, .modal select {
+      width: 100%;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 10px 12px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      outline: none;
+      resize: none;
+    }
+    .modal textarea { height: 80px; }
+    .modal input:focus, .modal textarea:focus {
+      border-color: rgba(249,168,212,0.5);
+    }
+    .color-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .color-swatch {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .color-swatch.active, .color-swatch:hover {
+      border-color: #fff;
+      transform: scale(1.2);
+    }
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .modal-actions .btn { flex: 1; text-align: center; }
+
+    /* ── AI Letter ─────────────────────────────────────── */
+    #letter-output {
+      margin-top: 16px;
+      font-size: 0.95rem;
+      line-height: 1.75;
+      color: #f3e8ff;
+      font-style: italic;
+      min-height: 60px;
+      white-space: pre-wrap;
+    }
+    .letter-cursor { display: inline-block; animation: blink 1s steps(1) infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+    #letter-spinner {
+      display: none;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.8rem;
+      font-style: normal;
+    }
+
+    /* ── Seed reveal modal ──────────────────────────────── */
+    #seed-modal .seed-message {
+      font-size: 1rem;
+      line-height: 1.7;
+      color: #f3e8ff;
+      font-style: italic;
+      margin-top: 12px;
+      padding: 16px;
+      background: rgba(167,139,250,0.08);
+      border-radius: 12px;
+      border-left: 3px solid #a78bfa;
+    }
+
+    /* ── Toast ──────────────────────────────────────────── */
+    #toast {
+      position: fixed;
+      bottom: 100px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,0,0,0.8);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 999px;
+      padding: 8px 20px;
+      font-size: 0.82rem;
+      color: #fff;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    #toast.show { opacity: 1; }
+
+    /* ── Planting hint ──────────────────────────────────── */
+    #plant-hint {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(255,255,255,0.6);
+      font-style: italic;
+      font-size: 0.9rem;
+      pointer-events: none;
+      display: none;
+      animation: pulse-hint 1.5s ease-in-out infinite;
+    }
+    @keyframes pulse-hint {
+      0%,100% { opacity:0.6; } 50% { opacity:0.3; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="world"></canvas>
+
+<!-- Presence indicator -->
+<div id="presence" class="offline">
+  <span class="dot"></span>
+  <span id="presence-text">Loading…</span>
+</div>
+
+<!-- Thinking-of-you overlay -->
+<div id="ping-overlay"></div>
+<div id="ping-label"></div>
+
+<!-- Planting hint -->
+<div id="plant-hint">Tap the garden to plant your memory here 🌱</div>
+
+<!-- Main overlay -->
+<div id="overlay">
+  <div id="topbar">
+    <div class="name-block">
+      <div class="greeting" id="greeting">Good morning</div>
+      <div class="her-name" id="her-name">Nduta 🌸</div>
+    </div>
+    <div class="days-block">
+      <div class="days-num" id="days-num">0</div>
+      <div class="days-sub">days together</div>
+    </div>
+  </div>
+
+  <div>
+    <!-- Seeds strip -->
+    <div id="seeds-strip"></div>
+    <!-- Action buttons -->
+    <div id="actions">
+      <button class="btn primary" onclick="App.pingThinking()">Thinking of you 💕</button>
+      <button class="btn" id="plant-btn" onclick="App.startPlanting()">Plant a memory 🌱</button>
+      <button class="btn gold" onclick="App.openLetter()">Write me something ✨</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<!-- ── Memory planting modal ─────────────────────────── -->
+<div id="plant-modal" class="modal-bg hide">
+  <div class="modal">
+    <h2>Plant a memory 🌸</h2>
+    <label>What's this memory?</label>
+    <input type="text" id="mem-title" placeholder="e.g. The first time you called me"/>
+    <label>A little note (optional)</label>
+    <textarea id="mem-note" placeholder="Tell the story…"></textarea>
+    <label>Pick a colour</label>
+    <div class="color-row" id="color-row"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="App.closePlantModal()">Cancel</button>
+      <button class="btn primary" onclick="App.submitMemory()">Plant it 🌱</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── AI Letter modal ─────────────────────────────────── -->
+<div id="letter-modal" class="modal-bg hide">
+  <div class="modal">
+    <h2>A letter just for you ✨</h2>
+    <p style="font-size:0.82rem;color:rgba(255,255,255,0.5);margin-bottom:4px;">What kind of letter?</p>
+    <select id="letter-mood" style="margin-top:6px">
+      <option value="love">A love letter</option>
+      <option value="missing">I miss you so much</option>
+      <option value="proud">I'm so proud of you</option>
+      <option value="morning">Good morning, you</option>
+      <option value="night">Good night, my love</option>
+      <option value="random">Surprise me</option>
+    </select>
+    <div id="letter-spinner">Writing just for you…</div>
+    <div id="letter-output"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="App.closeLetter()">Close</button>
+      <button class="btn gold" id="letter-gen-btn" onclick="App.generateLetter()">Write ✨</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Seed reveal modal ───────────────────────────────── -->
+<div id="seed-modal" class="modal-bg hide">
+  <div class="modal" id="seed-modal-inner">
+    <h2 id="seed-title">🌸</h2>
+    <div class="seed-message" id="seed-message"></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="App.closeSeedModal()">Close 💜</button>
+    </div>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="world.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════
+//  MAIN APP
+// ═══════════════════════════════════════════════════════
+
+const App = (() => {
+  // Detect which user is viewing (crude but fine for a 2-person app)
+  const IS_HER = !location.search.includes('me=1');
+  const MY_ID  = IS_HER ? CONFIG.her_name : CONFIG.your_name;
+  const OTHER  = IS_HER ? CONFIG.your_name : CONFIG.her_name;
+
+  let sb = null;           // supabase client
+  let pendingPlant = null; // world coords waiting for modal submit
+  let plantingMode = false;
+  let selectedColor = '#f9a8d4';
+
+  const COLORS = ['#f9a8d4','#fbbf24','#a78bfa','#6ee7b7','#93c5fd','#fca5a5'];
+
+  // ── Helpers ─────────────────────────────────────────
+  function daysSince(dateStr) {
+    const start = new Date(dateStr);
+    start.setHours(0,0,0,0);
+    const now = new Date();
+    now.setHours(0,0,0,0);
+    return Math.max(0, Math.floor((now - start) / 86400000));
+  }
+
+  function greeting() {
+    const h = new Date().getHours();
+    if (h < 12) return 'Good morning';
+    if (h < 17) return 'Good afternoon';
+    if (h < 21) return 'Good evening';
+    return 'Good night';
+  }
+
+  function toast(msg, duration = 2500) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), duration);
+  }
+
+  // ── Supabase ─────────────────────────────────────────
+  function initSupabase() {
+    if (CONFIG.supabase_url === 'YOUR_SUPABASE_URL') return null;
+    return supabase.createClient(CONFIG.supabase_url, CONFIG.supabase_anon);
+  }
+
+  async function setPresence() {
+    if (!sb) return;
+    await sb.from('presence').upsert({
+      user_id:   MY_ID,
+      name:      MY_ID,
+      last_seen: new Date().toISOString(),
+    });
+  }
+
+  async function watchPresence() {
+    if (!sb) {
+      document.getElementById('presence').classList.add('offline');
+      document.getElementById('presence-text').textContent = 'Set up Supabase to go live';
+      return;
+    }
+
+    const refresh = async () => {
+      const { data } = await sb.from('presence').select('*');
+      const other = data?.find(r => r.user_id === OTHER);
+      const el    = document.getElementById('presence');
+      const txt   = document.getElementById('presence-text');
+      if (other) {
+        const ago = (Date.now() - new Date(other.last_seen)) / 1000;
+        if (ago < 90) {
+          el.classList.remove('offline');
+          txt.textContent = `${OTHER} is here right now 💜`;
+          return;
+        }
+      }
+      el.classList.add('offline');
+      const mins = other ? Math.round((Date.now() - new Date(other.last_seen))/60000) : null;
+      txt.textContent = mins ? `${OTHER} was here ${mins}m ago` : `${OTHER} hasn't visited yet`;
+    };
+
+    refresh();
+    setInterval(refresh, 30000);
+
+    sb.channel('presence-watch')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'presence' }, refresh)
+      .subscribe();
+  }
+
+  async function loadGardenItems() {
+    if (!sb) return [];
+    const { data } = await sb.from('garden_items')
+      .select('*')
+      .eq('type', 'flower');
+    return data || [];
+  }
+
+  async function watchGardenItems() {
+    if (!sb) return;
+    sb.channel('garden-watch')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'garden_items' }, payload => {
+        if (payload.new.type === 'flower') {
+          World.addFlower(payload.new);
+          toast(`${payload.new.planted_by} planted "${payload.new.title}" 🌸`);
+        }
+      })
+      .subscribe();
+  }
+
+  async function watchPings() {
+    if (!sb) return;
+    sb.channel('ping-watch')
+      .on('postgres_changes', {
+        event:  'INSERT',
+        schema: 'public',
+        table:  'pings',
+        filter: `to_user=eq.${MY_ID}`,
+      }, () => showPingFlash(OTHER))
+      .subscribe();
+  }
+
+  function showPingFlash(from) {
+    const overlay = document.getElementById('ping-overlay');
+    const label   = document.getElementById('ping-label');
+    label.textContent = `${from} is thinking of you 💕`;
+    overlay.classList.add('show');
+    label.classList.add('show');
+    // haptic feedback on mobile
+    navigator.vibrate?.([100, 50, 100]);
+    setTimeout(() => {
+      overlay.classList.remove('show');
+      label.classList.remove('show');
+    }, 4000);
+  }
+
+  // ── Seeds ─────────────────────────────────────────────
+  function renderSeeds() {
+    const strip = document.getElementById('seeds-strip');
+    strip.innerHTML = '';
+    CONFIG.seeds.forEach(seed => {
+      const unlocks = new Date(seed.unlocks_at);
+      const now     = new Date();
+      const bloomed = now >= unlocks;
+      const daysLeft = Math.ceil((unlocks - now) / 86400000);
+
+      const el = document.createElement('div');
+      el.className = `seed-bud ${bloomed ? 'bloomed' : ''}`;
+      el.innerHTML = `
+        <div class="bud-emoji">${bloomed ? '🌸' : '🌰'}</div>
+        <span class="bud-label">${seed.label}</span>
+        <div class="bud-count">${bloomed ? 'Open 💜' : `Opens in ${daysLeft}d`}</div>
+      `;
+      if (bloomed) el.onclick = () => openSeed(seed);
+      strip.appendChild(el);
+    });
+  }
+
+  function openSeed(seed) {
+    document.getElementById('seed-title').textContent = `🌸 ${seed.label}`;
+    document.getElementById('seed-message').textContent = seed.message;
+    document.getElementById('seed-modal').classList.remove('hide');
+  }
+
+  // ── Planting ──────────────────────────────────────────
+  function buildColorPicker() {
+    const row = document.getElementById('color-row');
+    row.innerHTML = '';
+    COLORS.forEach(c => {
+      const el = document.createElement('div');
+      el.className = `color-swatch ${c === selectedColor ? 'active' : ''}`;
+      el.style.background = c;
+      el.onclick = () => {
+        selectedColor = c;
+        row.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+        el.classList.add('active');
+      };
+      row.appendChild(el);
+    });
+  }
+
+  function handleCanvasClick(e) {
+    if (!plantingMode) return;
+    const pos = World.clickToWorld(e);
+    // only allow planting in the garden area
+    if (pos.y < 0.45 || pos.y > 0.78) {
+      toast('Tap somewhere in the garden 🌿');
+      return;
+    }
+    pendingPlant = pos;
+    exitPlantingMode();
+    openPlantModal();
+  }
+
+  function openPlantModal() {
+    buildColorPicker();
+    document.getElementById('mem-title').value = '';
+    document.getElementById('mem-note').value  = '';
+    document.getElementById('plant-modal').classList.remove('hide');
+  }
+
+  async function submitMemory() {
+    const title = document.getElementById('mem-title').value.trim();
+    if (!title) { toast('Give it a name 🌱'); return; }
+    const item = {
+      type:       'flower',
+      title,
+      note:       document.getElementById('mem-note').value.trim() || null,
+      color:      selectedColor,
+      x:          pendingPlant?.x ?? Math.random() * 0.7 + 0.15,
+      y:          pendingPlant?.y ?? 0.5 + Math.random() * 0.15,
+      planted_by: MY_ID,
+    };
+
+    if (sb) {
+      const { data, error } = await sb.from('garden_items').insert(item).select().single();
+      if (error) { toast('Error saving 😢'); return; }
+      World.addFlower(data);
+    } else {
+      World.addFlower({ ...item, id: Date.now() });
+    }
+    closePlantModal();
+    toast('Memory planted 🌸');
+    pendingPlant = null;
+  }
+
+  // ── AI Letter ─────────────────────────────────────────
+  async function generateLetter() {
+    if (CONFIG.anthropic_key === 'YOUR_ANTHROPIC_API_KEY') {
+      document.getElementById('letter-output').textContent =
+        'Add your Anthropic API key in config.js to unlock AI-written letters.';
+      return;
+    }
+
+    const mood    = document.getElementById('letter-mood').value;
+    const days    = daysSince(CONFIG.start_date);
+    const hour    = new Date().getHours();
+    const timeStr = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : hour < 21 ? 'evening' : 'night';
+
+    const moodMap = {
+      love:    'a heartfelt, deeply personal love letter',
+      missing: 'a letter filled with longing and warmth about how much you miss her',
+      proud:   'a letter celebrating how proud you are of her and how far she has come',
+      morning: 'a warm, gentle good-morning letter to start her day',
+      night:   'a tender good-night letter to end her day',
+      random:  'a spontaneous, genuine letter — whatever feels right',
+    };
+
+    const prompt = `You are writing on behalf of a young man in Kenya to his girlfriend Nduta.
+They have been together for ${days} day${days !== 1 ? 's' : ''}. It is ${timeStr}.
+Write ${moodMap[mood]}. Keep it between 80-120 words.
+Make it feel real and personal — not generic. Use simple, honest language.
+No salutation, no sign-off. Just the letter body.`;
+
+    const output    = document.getElementById('letter-output');
+    const spinner   = document.getElementById('letter-spinner');
+    const genBtn    = document.getElementById('letter-gen-btn');
+
+    output.textContent  = '';
+    spinner.style.display = 'block';
+    genBtn.disabled = true;
+
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'x-api-key':         CONFIG.anthropic_key,
+          'anthropic-version': '2023-06-01',
+          'content-type':      'application/json',
+          'anthropic-dangerous-direct-browser-calls': 'true',
+        },
+        body: JSON.stringify({
+          model:      'claude-opus-4-8',
+          max_tokens: 300,
+          stream:     true,
+          messages:   [{ role: 'user', content: prompt }],
+        }),
+      });
+
+      spinner.style.display = 'none';
+      const cursor = document.createElement('span');
+      cursor.className = 'letter-cursor';
+      cursor.textContent = '|';
+
+      const reader = res.body.getReader();
+      const dec    = new TextDecoder();
+      let   buf    = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        const lines = buf.split('\n');
+        buf = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          const raw = line.slice(5).trim();
+          if (raw === '[DONE]') break;
+          try {
+            const ev = JSON.parse(raw);
+            if (ev.type === 'content_block_delta' && ev.delta?.text) {
+              output.textContent += ev.delta.text;
+              output.appendChild(cursor);
+            }
+          } catch {}
+        }
+      }
+      cursor.remove();
+    } catch (err) {
+      spinner.style.display = 'none';
+      output.textContent = 'Could not connect. Check your API key in config.js.';
+    }
+    genBtn.disabled = false;
+  }
+
+  // ── Public API ────────────────────────────────────────
+  return {
+    async init() {
+      sb = initSupabase();
+
+      // World
+      const canvas = document.getElementById('world');
+      World.init(canvas);
+      canvas.addEventListener('click', handleCanvasClick);
+
+      const days = daysSince(CONFIG.start_date);
+      document.getElementById('days-num').textContent = days;
+      document.getElementById('greeting').textContent = greeting();
+      document.getElementById('her-name').textContent = `${CONFIG.her_name} 🌸`;
+
+      World.start(days);
+
+      // Load existing memories
+      const items = await loadGardenItems();
+      World.setFlowers(items);
+
+      // Real-time
+      await setPresence();
+      setInterval(setPresence, 45000);
+      watchPresence();
+      watchGardenItems();
+      watchPings();
+
+      // Seeds
+      renderSeeds();
+    },
+
+    // ── Thinking of you
+    async pingThinking() {
+      if (sb) {
+        await sb.from('pings').insert({ from_user: MY_ID, to_user: OTHER });
+      }
+      showPingFlash(MY_ID === CONFIG.her_name ? CONFIG.your_name : CONFIG.her_name);
+      toast(`Sent 💕 to ${OTHER}`);
+    },
+
+    // ── Planting
+    startPlanting() {
+      plantingMode = true;
+      document.getElementById('plant-hint').style.display = 'block';
+      document.getElementById('plant-btn').textContent    = 'Cancel 🌱';
+      document.getElementById('plant-btn').onclick        = () => this.cancelPlanting();
+      document.getElementById('world').style.cursor       = 'crosshair';
+    },
+
+    cancelPlanting() {
+      exitPlantingMode();
+    },
+
+    closePlantModal() { closePlantModal(); },
+    submitMemory,
+
+    // ── Letter
+    openLetter() {
+      document.getElementById('letter-modal').classList.remove('hide');
+      document.getElementById('letter-output').textContent = '';
+    },
+    closeLetter()   { document.getElementById('letter-modal').classList.add('hide'); },
+    generateLetter,
+
+    // ── Seed
+    closeSeedModal() { document.getElementById('seed-modal').classList.add('hide'); },
+  };
+
+  function exitPlantingMode() {
+    plantingMode = false;
+    document.getElementById('plant-hint').style.display = 'none';
+    document.getElementById('plant-btn').textContent    = 'Plant a memory 🌱';
+    document.getElementById('plant-btn').onclick        = () => App.startPlanting();
+    document.getElementById('world').style.cursor       = 'crosshair';
+  }
+
+  function closePlantModal() {
+    document.getElementById('plant-modal').classList.add('hide');
+  }
+})();
+
+App.init();
+
+// Close modals on background click
+document.querySelectorAll('.modal-bg').forEach(bg => {
+  bg.addEventListener('click', e => {
+    if (e.target === bg) bg.classList.add('hide');
+  });
+});
+</script>
+</body>
+</html>
