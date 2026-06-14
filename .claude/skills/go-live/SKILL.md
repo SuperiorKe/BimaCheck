@@ -1,6 +1,6 @@
 ---
 name: go-live
-description: Wire BimaCheck from offline dry-run to live Africa's Talking + M-Pesa Daraja, and verify one real B2C payout before a demo. Walks .env setup, ngrok/public callback, confirms the server sees credentials (not dry-run), fires a real claim, and watches for the /b2c/result callback or the 8s fallback. Use when taking the app live for the hackathon or any real-credential test.
+description: Wire BimaCheck from offline dry-run to live Africa's Talking + M-Pesa Daraja, and verify one real B2C payout before a demo. Walks .env setup, stands up (and proves reachable) a public HTTPS callback URL, confirms the server is not in dry-run, fires a real claim, watches the /b2c/result callback vs the 8s fallback, and uses a synthetic callback to isolate a broken endpoint from a silent provider. Use this skill whenever the user says go live, wire credentials, verify a real payout, test the Daraja callback, or take the app live for the hackathon or any real-credential test.
 ---
 
 # /go-live — wire credentials and verify a real payout
@@ -41,12 +41,22 @@ PUBLIC_CALLBACK_BASE=<public HTTPS base, e.g. https://xxxx.ngrok-free.app or a c
 
 Config is loaded at startup via `process.loadEnvFile()` in `src/config.js`, so **any .env change needs a server restart** to take effect.
 
-### 2. Stand up a public HTTPS callback URL
+### 2. Stand up a public HTTPS callback URL — and prove it answers
 
-Daraja calls `PUBLIC_CALLBACK_BASE/b2c/result` and `/b2c/timeout` asynchronously, so the box must be reachable from Safaricom.
+Daraja calls `PUBLIC_CALLBACK_BASE/b2c/result` and `/b2c/timeout` asynchronously, so the box must be reachable from Safaricom over HTTPS.
 
-- **Sandbox:** ngrok works. Run `ngrok http 3000` and use the `https://...ngrok-free.app` URL.
-- **Production:** Safaricom blocks ngrok. Use a pre-provisioned HTTPS host (Render/Railway/Fly) per the README day-of checklist.
+- **Stable / production-shaped (recommended):** deploy the app on the public VM and use its HTTPS URL. Run `/deploy` (provision mode); the callback base becomes `https://173-255-232-5.ip.linodeusercontent.com`. No laptop dependency and no URL that changes under you.
+- **Quick sandbox:** `ngrok http 3000` and use the `https://...ngrok-free.app` URL. Fine for a fast test, but the free URL changes on every restart, which is the number-one stale-config trap.
+
+Set `PUBLIC_CALLBACK_BASE` with **no trailing slash**. A base ending in `/` builds `https://host//b2c/result`, which Express will not route. `config.js` strips a trailing slash defensively, but set it clean anyway.
+
+**Before trusting the URL, prove it answers.** A dead or stale tunnel is the most common reason "the callback never came":
+
+```bash
+curl -sS -m 8 -o /dev/null -w "callback base: HTTP %{http_code}\n" "$PUBLIC_CALLBACK_BASE/api/claims"
+```
+
+`200` means good. A timeout or `000` means the URL is dead — an old ngrok session, or a firewall dropping 443. A connect *timeout* (rather than "connection refused") points at a firewall; on a cloud VM that is usually the provider's edge firewall, separate from the host ufw (see `/expose-https`). Fix this before going further, or every payout will silently fall through to the 8s fallback.
 
 The USSD webhook (`/ussd`) also needs to be reachable by AT — point AT's USSD callback at `PUBLIC_CALLBACK_BASE/ussd`.
 
@@ -71,20 +81,38 @@ File a clean claim that will APPROVE (seed member at a facility they have an adm
 curl -s -X POST http://localhost:3000/ussd --data "text=1*1&phoneNumber=%2B254708374149"
 ```
 
-Then watch for the payout to confirm. Two paths can confirm it (whichever lands first):
+Two paths can confirm the payout (whichever lands first):
 
-- **`/b2c/result` callback** from Daraja -> `confirmPayout` -> claim `PAID`. Sandbox callbacks fail often.
-- **8s fallback timer** in `requestPayout` -> `confirmPayout` -> claim `PAID`. This is the safety net when the callback never arrives.
+- **`/b2c/result` callback** from Daraja -> `confirmPayout` -> claim `PAID`. Sandbox callbacks are unreliable and often never arrive at all.
+- **8s fallback timer** in `requestPayout` -> `confirmPayout` -> claim `PAID`. The safety net for when the callback never lands.
 
-The single-shot `markPaid` guard means whichever fires first wins and the second is a no-op (no double SMS, no implied double payout).
+The single-shot `markPaid` guard means whichever fires first wins and the second is a no-op (no double SMS).
 
-Verify the claim reached `PAID`:
+**Watch for the real callback.** If the app is behind the VM's Caddy, tail both logs while the claim processes:
 
 ```bash
-curl -s http://localhost:3000/api/claims
+SSH="ssh -i $HOME/.ssh/openclaw-frankfurt root@173.255.232.5"
+$SSH "journalctl -u bimacheck -n 15 --no-pager -o cat | grep -i mpesa"  # expect: [mpesa] B2C requested for claim N: 0
+$SSH "journalctl -u caddy -n 50 --no-pager -o cat | grep /b2c/"         # a real Daraja result POST shows here, with its client IP
 ```
 
-The member-visible signal that money actually moved is the **M-Pesa "received" SMS** that Safaricom sends independently of our app. In sandbox that may not arrive; trust the `PAID` state + the `[mpesa] B2C requested` log + a `ResultCode 0` on the callback.
+`ResponseCode 0` plus a returned `ConversationID` means Daraja *accepted* the request (queued it), not that it paid. The verdict only comes on `/b2c/result`.
+
+**Isolate "our endpoint" from "the provider never called."** If no `/b2c/result` arrives, POST a synthetic Daraja result to your public endpoint. If it routes through and answers, your endpoint is fine and the gap is on Safaricom's side (expected in sandbox):
+
+```bash
+curl -sS -X POST "$PUBLIC_CALLBACK_BASE/b2c/result" -H "Content-Type: application/json" \
+  -d '{"Result":{"ResultCode":0,"ResultDesc":"ok","ConversationID":"<the claim conversationId>","TransactionID":"TEST"}}'
+# expect: {"ResultCode":0,"ResultDesc":"received"}, and a POST /b2c/result -> 200 in the caddy log
+```
+
+Verify the claim state:
+
+```bash
+curl -s "$PUBLIC_CALLBACK_BASE/api/claims"
+```
+
+**Be honest about what `PAID` means here.** In sandbox the result callback frequently never arrives, so the claim reaches `PAID` only via the 8s fallback — which marks PAID and sends the "approved" SMS *before* Daraja confirms anything. That is fine for a demo but a real risk for live money (see `TODOS.md` item 3 and `docs/DEPLOYMENT.md`). The member-visible proof that money actually moved is the **M-Pesa "received" SMS** Safaricom sends independently; in sandbox it may not come. So treat a fallback-driven `PAID` as "dispatched and accepted", not "confirmed paid", until you see a real `ResultCode 0` on the callback.
 
 ### 6. Report go-live status
 
@@ -102,6 +130,8 @@ Tell the user which edges are live vs dry-run, whether the public callback URL i
 - **No SMS received but logs show a send** -> sandbox SMS only delivers to numbers registered in the AT sandbox simulator. Use a registered test number.
 - **No payment received but claim is `PAID`** -> expected in sandbox with an arbitrary recipient; use a Daraja sandbox test MSISDN (step 4).
 - **USSD session dies** -> the `/ussd` handler must return within ~10s. It does no Daraja/SMS I/O by design (that runs in the background worker), so a slow USSD response means something is doing I/O on the request path that shouldn't be.
+- **No `/b2c/result` ever arrives; claim PAID only by the fallback** -> first run the step 2 reachability pre-check and confirm `PUBLIC_CALLBACK_BASE` has no trailing slash. Then POST the synthetic callback (step 5). If your endpoint answers but Safaricom still never calls, that is sandbox behaviour, not your bug.
+- **External connect *times out* (not "refused")** -> a firewall is dropping the port. On a cloud VM this is usually the provider's edge firewall (e.g. Linode Cloud Firewall), separate from the host ufw. Open inbound 443 there. See `/expose-https`.
 
 ## Notes
 
