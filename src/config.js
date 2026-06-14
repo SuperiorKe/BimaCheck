@@ -20,6 +20,6 @@ export const config = {
     shortcode: process.env.DARAJA_SHORTCODE || '',
     initiator: process.env.DARAJA_INITIATOR_NAME || 'testapi',
     securityCredential: process.env.DARAJA_SECURITY_CREDENTIAL || '',
-    callbackBase: process.env.PUBLIC_CALLBACK_BASE || '',
+    callbackBase: (process.env.PUBLIC_CALLBACK_BASE || '').replace(/\/+$/, ''),
   },
 };
