@@ -4,11 +4,11 @@
 //   PENDING --decideClaim--> HELD  -> held SMS (reason), stop
 //                        \-> APPROVED -> payout -> approved SMS
 //
-// NOTE: in this core layer the APPROVED branch marks the claim PAID and sends the
-// approved SMS directly (no Daraja yet) — that makes USSD -> decide -> SMS a
-// complete, un-failable demo. The payments layer will replace the marked-here
-// section with a Daraja B2C request whose result callback (or 8s fallback) calls
-// markPaid(); the single-shot guard already makes that safe.
+// NOTE: the APPROVED branch hands off to requestPayout. In dry-run (no Daraja
+// creds) that confirms immediately, so USSD -> decide -> SMS stays a complete,
+// un-failable demo. In live mode a real ResultCode 0 callback confirms PAID,
+// while the 8s fallback only marks the payout ASSUMED (sent, unconfirmed). The
+// single-shot guards in db.js keep every path consistent.
 import { getClaim, buildCtx, setDecision } from './db.js';
 import { decideClaim } from './engine/index.js';
 import { heldMessage, sendSms } from './sms.js';

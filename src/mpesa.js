@@ -1,20 +1,27 @@
-// M-Pesa Daraja B2C disbursement (pays money TO the member — NOT STK push,
-// which only collects). The result is asynchronous: Daraja calls /b2c/result
-// later. Sandbox callbacks fail often, so we also arm an 8s fallback. BOTH the
-// callback and the fallback route through confirmPayout(), whose single-shot
-// markPaid guard guarantees the approved SMS fires at most once even if a late
-// callback lands after the fallback already ran.
+// M-Pesa Daraja B2C disbursement. This pays money TO the member, not STK push,
+// which only collects. The result is asynchronous: Daraja calls /b2c/result
+// later. Sandbox callbacks fail often, so we arm an 8s fallback.
 //
-// No credentials configured => dry-run: confirm immediately so offline dev and
-// the no-Daraja demo stay snappy and never block.
+// Confirmation stays honest about what is actually known:
+//   real Daraja ResultCode 0   -> confirmPayout(): claim PAID, "paid" SMS.
+//   8s fallback (no callback)   -> assumePayout(): payout ASSUMED (sent,
+//                                  unconfirmed), "on the way" SMS, never PAID.
+//   failure / timeout callback  -> markFailed(): payout FAILED, never PAID.
+// markPaid(), markAssumed(), and markFailed() are single-shot guards, so a late
+// callback cannot pay or notify twice, and cannot contradict a confirmed payout.
+//
+// No credentials configured means dry-run: confirm immediately so offline dev
+// and the no-Daraja stage demo stay snappy and never block.
 import {
   getClaim,
   markPaid,
+  markAssumed,
+  markFailed,
   setMpesaStatus,
   linkConversation,
   getClaimIdByConversation,
 } from './db.js';
-import { approvedMessage, sendSms } from './sms.js';
+import { approvedMessage, initiatedMessage, sendSms } from './sms.js';
 import { config } from './config.js';
 
 const DARAJA_BASE = 'https://sandbox.safaricom.co.ke';
@@ -26,11 +33,23 @@ const DARAJA_BASE = 'https://sandbox.safaricom.co.ke';
 const toMsisdn = (m) => String(m || '').replace(/\D/g, '');
 
 // Confirm a payout exactly once. Returns true only for the call that actually
-// transitioned the claim to PAID (and therefore sent the approved SMS).
+// transitioned the claim to PAID (and therefore sent the approved SMS). Called
+// by a real Daraja ResultCode 0 callback, and by the dry-run path.
 export async function confirmPayout(claimId) {
-  if (!markPaid(claimId)) return false; // already PAID — ignore the duplicate
+  if (!markPaid(claimId)) return false; // already PAID, ignore the duplicate
   const claim = getClaim(claimId);
   await sendSms(claim.member, approvedMessage(claim));
+  return true;
+}
+
+// Live fallback path: the 8s timer fired without a Daraja result callback yet.
+// Record the payout as ASSUMED (sent, unconfirmed) and tell the member it is on
+// the way. Never claim it was paid. A later result callback reconciles this to
+// PAID (success) or FAILED (failure).
+export async function assumePayout(claimId) {
+  if (!markAssumed(claimId)) return false; // already confirmed, or already assumed
+  const claim = getClaim(claimId);
+  await sendSms(claim.member, initiatedMessage(claim));
   return true;
 }
 
@@ -62,7 +81,8 @@ export async function darajaTransport(claim) {
 }
 
 // Dispatch a B2C payout and arm the fallback. Returns the fallback timer (or
-// undefined in dry-run). Confirmation happens later via /b2c/result or the timer.
+// undefined in dry-run). Confirmation happens later via /b2c/result; if no
+// callback lands within fallbackMs, the timer marks the payout ASSUMED.
 export async function requestPayout(claim, opts = {}) {
   const { transport = darajaTransport, fallbackMs = 8000 } = opts;
   setMpesaStatus(claim.id, 'REQUESTED');
@@ -81,13 +101,13 @@ export async function requestPayout(claim, opts = {}) {
   }
 
   const timer = setTimeout(() => {
-    confirmPayout(claim.id).catch(() => {});
+    assumePayout(claim.id).catch(() => {});
   }, fallbackMs);
   if (timer.unref) timer.unref();
   return timer;
 }
 
-// POST /b2c/result — Daraja result callback. Ack immediately, then confirm/fail.
+// POST /b2c/result: Daraja result callback. Ack immediately, then confirm or fail.
 export async function b2cResult(req, res) {
   const result = req.body?.Result || {};
   res.json({ ResultCode: 0, ResultDesc: 'received' });
@@ -100,12 +120,12 @@ export async function b2cResult(req, res) {
   if (Number(result.ResultCode) === 0) {
     await confirmPayout(claimId);
   } else {
-    setMpesaStatus(claimId, 'FAILED');
+    markFailed(claimId);
     console.error(`[mpesa] B2C failed for claim ${claimId}:`, result.ResultDesc);
   }
 }
 
-// POST /b2c/timeout — Daraja queue timeout callback.
+// POST /b2c/timeout: Daraja queue timeout callback.
 export function b2cTimeout(req, res) {
   console.error('[mpesa] B2C queue timeout:', req.body);
   res.json({ ResultCode: 0, ResultDesc: 'received' });

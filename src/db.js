@@ -86,6 +86,30 @@ export function markPaid(id) {
   return r.changes > 0;
 }
 
+// The live B2C fallback fired but Daraja has not confirmed. Record the payout as
+// ASSUMED (dispatched, unconfirmed) without claiming PAID. Never downgrades a
+// confirmed payout, and is single-shot. Returns true only for the call that set
+// ASSUMED.
+export function markAssumed(id) {
+  const r = db
+    .prepare(
+      `UPDATE claims SET mpesa_status = 'ASSUMED'
+         WHERE id = ? AND status <> 'PAID'
+           AND (mpesa_status IS NULL OR mpesa_status NOT IN ('PAID', 'ASSUMED'))`
+    )
+    .run(id);
+  return r.changes > 0;
+}
+
+// A Daraja failure or timeout for a payout that was never confirmed. Marks it
+// FAILED without contradicting a claim that already reached PAID.
+export function markFailed(id) {
+  const r = db
+    .prepare(`UPDATE claims SET mpesa_status = 'FAILED' WHERE id = ? AND status <> 'PAID'`)
+    .run(id);
+  return r.changes > 0;
+}
+
 export function setMpesaStatus(id, status) {
   db.prepare(`UPDATE claims SET mpesa_status = ? WHERE id = ?`).run(status, id);
 }
