@@ -27,6 +27,9 @@ db.exec(`
     status        TEXT    NOT NULL DEFAULT 'PENDING',
     decision      TEXT,
     reason        TEXT,
+    rule          TEXT,
+    confidence    REAL,
+    decided_at    INTEGER,
     mpesa_status  TEXT,
     conversation_id TEXT
   );
@@ -43,6 +46,9 @@ function rowToClaim(row) {
     status: row.status,
     decision: row.decision,
     reason: row.reason,
+    rule: row.rule,
+    confidence: row.confidence,
+    decidedAt: row.decided_at,
     mpesaStatus: row.mpesa_status,
     conversationId: row.conversation_id,
   };
@@ -71,9 +77,13 @@ export function priorClaims(member, beforeTs) {
     .map(rowToClaim);
 }
 
-export function setDecision(id, decision, reason) {
-  db.prepare(`UPDATE claims SET status = ?, decision = ?, reason = ? WHERE id = ?`)
-    .run(decision, decision, reason ?? null, id);
+// Record the engine's decision plus the named lead rule and its confidence, and
+// stamp the decision time. rule/confidence are null for a clean approval. This
+// is what the audit export reads, so the regulator sees a named, timed decision.
+export function setDecision(id, decision, reason, rule = null, confidence = null) {
+  db.prepare(
+    `UPDATE claims SET status = ?, decision = ?, reason = ?, rule = ?, confidence = ?, decided_at = ? WHERE id = ?`
+  ).run(decision, decision, reason ?? null, rule ?? null, confidence ?? null, Date.now(), id);
 }
 
 // Single-shot guard: transition to PAID at most once. Returns true only for the

@@ -19,7 +19,8 @@ export async function processClaim(claimId) {
   if (!claim) return;
 
   const result = decideClaim(claim, buildCtx(claim));
-  setDecision(claimId, result.decision, result.leadReason);
+  const lead = result.triggered[0];
+  setDecision(claimId, result.decision, result.leadReason, lead?.name ?? null, lead?.confidence ?? null);
 
   if (result.decision === 'HELD') {
     await sendSms(claim.member, heldMessage(getClaim(claimId)));

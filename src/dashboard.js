@@ -2,6 +2,7 @@
 // renders each claim's decision, the rule that fired, its reason, and payout
 // status. A benchmark panel runs /api/backtest on demand and shows the engine's
 // measured catch rate, false-positive rate, value blocked, and decision latency.
+// A Download audit link exports the decision ledger as CSV (/api/audit.csv).
 // No build step, no framework, no external assets. Served at GET /.
 export const dashboardHtml = `<!doctype html>
 <html lang="en">
@@ -35,11 +36,15 @@ export const dashboardHtml = `<!doctype html>
   main { padding:16px 20px; }
   .bench { border:1px solid var(--line); background:var(--panel); border-radius:6px;
            padding:14px 16px; margin-bottom:16px; }
-  .bench-head { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .bench-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
   .bench button { font:600 11px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase;
                   color:var(--bg); background:var(--paid); border:0; border-radius:4px;
                   padding:8px 14px; cursor:pointer; }
   .bench button:disabled { opacity:.5; cursor:default; }
+  .audit-link { font:600 11px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase;
+                color:var(--txt); background:transparent; border:1px solid var(--line);
+                border-radius:4px; padding:7px 13px; text-decoration:none; }
+  .audit-link:hover { border-color:var(--mut); }
   .bench-cap { color:var(--mut); font:300 12px/1.4 var(--sans); }
   .metrics { display:flex; flex-wrap:wrap; gap:28px; margin-top:14px; }
   .metric { display:flex; flex-direction:column; gap:4px; }
@@ -93,6 +98,7 @@ export const dashboardHtml = `<!doctype html>
   <section class="bench">
     <div class="bench-head">
       <button id="run-bench" type="button">Run benchmark</button>
+      <a class="audit-link" href="/api/audit.csv" download="bimacheck-audit.csv">Download audit</a>
       <span class="bench-cap" id="bench-cap">Measure the engine on a labelled synthetic benchmark.</span>
     </div>
     <div class="metrics" id="metrics" hidden>
