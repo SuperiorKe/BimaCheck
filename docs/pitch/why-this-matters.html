@@ -1,0 +1,127 @@
+<!doctype html>
+<!--
+  BimaCheck pitch slide: "Why this matters"
+  Pulls the SHA fraud scandal + the 10-day microinsurance claims clock.
+  Open in a browser, press F11 for full screen to present.
+  Speaker notes (~30s) are below the slide, off the 16:9 frame.
+
+  Sources: docs/research/hospi-cash-market.md
+    - Sh11bn SHA fraud, Oct 2024-Apr 2025 (Ministry of Health audit; Daily Nation, Money254)
+    - 1,188 fraud files to DCI, KSh 10.6bn rejected (SHA)
+    - up to KSh 33bn/yr medical fraud (AKI)
+    - 10-day pay-or-reject (Microinsurance Regulations 2020, s.14)
+    - microinsurance combined ratio 102.1% H1 2025 (Cytonn/IRA)
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BimaCheck — Why this matters</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --canvas:#0A0C0F; --surface:#111418; --border:#1E2430;
+    --text:#D8DDE8; --dim:#8C95A8; --muted:#5A6478;
+    --paid:#00C896; --held:#E8A020; --held-bg:rgba(232,160,32,.10); --paid-bg:rgba(0,200,150,.09);
+    --mono:"IBM Plex Mono","Courier New",monospace;
+    --sans:"DM Sans",system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--canvas);color:var(--text);font-family:var(--sans);font-weight:300}
+  body{min-height:100vh;display:flex;flex-direction:column;align-items:center}
+
+  /* 16:9 slide that fits the viewport */
+  .slide{
+    width:100vw;height:100vh;max-height:100vh;
+    aspect-ratio:16/9;
+    padding:clamp(28px,4.2vw,72px);
+    display:flex;flex-direction:column;
+    background:
+      radial-gradient(1200px 500px at 12% -10%, rgba(75,123,255,.05), transparent 60%),
+      var(--canvas);
+  }
+
+  /* header bar, terminal style */
+  .head{display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--border);padding-bottom:16px}
+  .wordmark{font-family:var(--mono);font-weight:600;font-size:clamp(13px,1.1vw,16px);letter-spacing:.04em}
+  .sep{color:var(--border)}
+  .eyebrow{font-family:var(--mono);font-size:clamp(10px,.85vw,12px);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  .live{margin-left:auto;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--paid);animation:pulse 2s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  h1{font-family:var(--mono);font-weight:600;font-size:clamp(26px,3.1vw,46px);letter-spacing:-.01em;margin:clamp(18px,2.4vw,34px) 0 clamp(20px,2.6vw,40px)}
+
+  /* the two stat blocks */
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,1.8vw,28px);flex:1}
+  .block{
+    background:var(--surface);border:1px solid var(--border);border-radius:3px;
+    border-left:3px solid var(--border);
+    padding:clamp(18px,1.9vw,30px) clamp(20px,2vw,34px);
+    display:flex;flex-direction:column;
+  }
+  .block.fraud{border-left-color:var(--held);background:linear-gradient(0deg,var(--held-bg),var(--held-bg)),var(--surface)}
+  .block.answer{border-left-color:var(--paid);background:linear-gradient(0deg,var(--paid-bg),var(--paid-bg)),var(--surface)}
+
+  .kicker{font-family:var(--mono);font-size:clamp(10px,.82vw,12px);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:auto}
+  .stat{font-family:var(--mono);font-weight:600;font-size:clamp(38px,5.6vw,84px);line-height:1;letter-spacing:-.02em;margin:clamp(16px,2vw,30px) 0 clamp(12px,1.3vw,18px)}
+  .fraud .stat{color:var(--held)}
+  .answer .stat{color:var(--paid)}
+  .answer .stat .arrow{color:var(--muted);font-weight:400}
+  .answer .stat .small{font-size:.62em}
+  .lede{font-size:clamp(13px,1.06vw,17px);line-height:1.5;color:var(--text);font-weight:300;max-width:34ch}
+  .foot{margin-top:clamp(14px,1.6vw,22px);padding-top:clamp(12px,1.2vw,16px);border-top:1px solid var(--border);font-size:clamp(11px,.84vw,13px);line-height:1.5;color:var(--dim)}
+  .foot b{color:var(--text);font-weight:500}
+  .num{font-family:var(--mono)}
+
+  .land{margin-top:clamp(18px,2.2vw,32px);font-family:var(--mono);font-size:clamp(13px,1.18vw,19px);letter-spacing:.01em;color:var(--text)}
+  .land .hl-paid{color:var(--paid)}
+  .land .hl-held{color:var(--held)}
+
+  /* speaker notes, off the presented frame */
+  .notes{max-width:880px;width:92%;margin:40px auto 80px;color:var(--dim);font-size:14px;line-height:1.6}
+  .notes h2{font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-bottom:14px}
+  .notes p{margin-bottom:12px}
+  .notes .src{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:18px;border-top:1px solid var(--border);padding-top:14px}
+</style>
+</head>
+<body>
+  <section class="slide" aria-label="Why this matters">
+    <header class="head">
+      <span class="wordmark">BimaCheck</span>
+      <span class="sep">/</span>
+      <span class="eyebrow">Claims integrity over USSD</span>
+      <span class="live"><span class="dot"></span>The problem is live</span>
+    </header>
+
+    <h1>Why this matters</h1>
+
+    <div class="grid">
+      <div class="block fraud">
+        <div class="kicker">The fraud is real, and named this year</div>
+        <div class="stat"><span class="num">KSh 11B</span></div>
+        <div class="lede">stolen from the Social Health Authority in six months, October 2024 to April 2025, through ghost patients, duplicate claims, and admissions where care never happened.</div>
+        <div class="foot">Those are <b>BimaCheck's three rules</b>. <span class="num">1,188</span> fraud files sent to the DCI, <span class="num">KSh 10.6B</span> in claims rejected. AKI puts medical fraud at up to <span class="num">KSh 33B</span> a year.</div>
+      </div>
+
+      <div class="block answer">
+        <div class="kicker">The clock is the law</div>
+        <div class="stat"><span class="num">10 days</span> <span class="arrow">&rarr;</span> <span class="small num">seconds</span></div>
+        <div class="lede">The Microinsurance Regulations 2020 give an insurer ten calendar days to pay or reject a claim. Best in class today is three days. BimaCheck clears the honest claim in seconds and holds the suspect one with a plain-language reason. It never auto-denies.</div>
+        <div class="foot">Microinsurance already runs at a <b><span class="num">102.1%</span> combined ratio</b>. Every fraud paid and every hour of manual review comes off a line that is already losing money.</div>
+      </div>
+    </div>
+
+    <div class="land"><span class="hl-paid">Deterministic.</span> <span class="hl-held">Auditable.</span> Built for the phone the member already owns.</div>
+  </section>
+
+  <aside class="notes">
+    <h2>Speaker notes — about 30 seconds</h2>
+    <p>Insurance fraud in Kenya is not a theory. This year a government audit found eleven billion shillings stolen from the Social Health Authority in six months, through ghost patients, duplicate claims, and admissions that never happened. Those are exactly the three frauds BimaCheck catches.</p>
+    <p>At the same time, the law gives a microinsurer ten days to pay or reject a claim, and the segment is already losing money on every shilling. BimaCheck clears the honest claim in seconds and holds the suspect one with a reason a regulator can read. It never auto-denies.</p>
+    <p class="src">Sources in docs/research/hospi-cash-market.md: Ministry of Health audit (Daily Nation, Money254); SHA figures; AKI medical-fraud estimate; Microinsurance Regulations 2020 s.14; Cytonn/IRA H1 2025 combined ratio.</p>
+  </aside>
+</body>
+</html>

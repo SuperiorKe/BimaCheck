@@ -5,6 +5,7 @@ import {
   missingAdmission,
   duplicateClaim,
   geoTimeImpossible,
+  amountVelocity,
 } from '../src/engine/rules.js';
 
 const FAC = {
@@ -93,5 +94,37 @@ test('geoTimeImpossible: clean for a nearby facility', () => {
 test('geoTimeImpossible: defensive when coordinates are missing (no throw, no flag)', () => {
   const ctx = { facilities: FAC, priorClaims: [claim({ facilityCode: 'KIBERA' })] };
   const r = geoTimeImpossible(claim({ facilityCode: 'NOGEO', createdAt: t0 + min(10) }), ctx);
+  assert.equal(r.triggered, false);
+});
+
+// --- amountVelocity ---
+test('amountVelocity: triggers on the 3rd claim from one member within the window', () => {
+  const ctx = {
+    facilities: FAC,
+    priorClaims: [
+      claim({ facilityCode: 'KIBERA', createdAt: t0 - min(30) }),
+      claim({ facilityCode: 'THIKA', createdAt: t0 - min(10) }),
+    ],
+  };
+  const r = amountVelocity(claim({ facilityCode: 'NEARK' }), ctx);
+  assert.equal(r.triggered, true);
+  assert.match(r.reason, /velocity/i);
+});
+
+test('amountVelocity: clean with one prior claim in the window', () => {
+  const ctx = { facilities: FAC, priorClaims: [claim({ facilityCode: 'KIBERA', createdAt: t0 - min(10) })] };
+  const r = amountVelocity(claim({ facilityCode: 'THIKA' }), ctx);
+  assert.equal(r.triggered, false);
+});
+
+test('amountVelocity: clean when prior claims fall outside the window', () => {
+  const ctx = {
+    facilities: FAC,
+    priorClaims: [
+      claim({ facilityCode: 'KIBERA', createdAt: t0 - min(2000) }),
+      claim({ facilityCode: 'THIKA', createdAt: t0 - min(3000) }),
+    ],
+  };
+  const r = amountVelocity(claim({ facilityCode: 'NEARK' }), ctx);
   assert.equal(r.triggered, false);
 });

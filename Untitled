@@ -1,0 +1,22 @@
+# Copy to .env and fill in. .env is gitignored. Use sandbox/synthetic values only.
+
+# Africa's Talking
+AT_USERNAME=sandbox
+AT_API_KEY=
+AT_SHORTCODE=
+
+# M-Pesa Daraja (sandbox)
+DARAJA_CONSUMER_KEY=
+DARAJA_CONSUMER_SECRET=
+DARAJA_SHORTCODE=
+DARAJA_INITIATOR_NAME=testapi
+# Sandbox-provided test SecurityCredential string (NOT a runtime-generated one for the hackathon)
+DARAJA_SECURITY_CREDENTIAL=
+# Public HTTPS base for B2C result/timeout callbacks (pre-provisioned cloud box)
+PUBLIC_CALLBACK_BASE=
+
+# Server
+PORT=3000
+
+# Fixed hospi-cash benefit paid on an approved claim (KES)
+HOSPICASH_BENEFIT_KES=2000

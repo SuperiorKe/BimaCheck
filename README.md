@@ -18,7 +18,7 @@ KES ~11bn was lost from Kenya's SHA fund to claims fraud in six months. Insurers
 
 ## Status
 
-Feature-complete. USSD intake → decision engine → SMS, with M-Pesa B2C payout and an insurer dashboard. 34 tests passing. Design and architecture live in [`docs/DESIGN.md`](docs/DESIGN.md) and [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md).
+Feature-complete, with the evidence layer added: a fraud benchmark that reports measured metrics and an exportable decision ledger. USSD intake → decision engine → SMS, with M-Pesa B2C payout, an insurer dashboard, a Run benchmark panel (`GET /api/backtest`), and a Download audit ledger (`GET /api/audit.csv`). 46 tests passing. Design and architecture live in [`docs/DESIGN.md`](docs/DESIGN.md) and [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md); the demo runbook is in [`docs/DEMO.md`](docs/DEMO.md).
 
 ## Running it
 

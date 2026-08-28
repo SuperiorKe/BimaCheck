@@ -13,11 +13,17 @@
 //     facilities:  { [code]: { code, name, lat, lng } },
 //     admissions:  [ { member, facilityCode } ],            // seeded source of truth
 //     priorClaims: [ { member, facilityCode, claimType, createdAt } ], // before this claim
-//     thresholds:  { dupWindowMin, geoMinKm, geoWindowMin }, // optional, defaults below
+//     thresholds:  { dupWindowMin, geoMinKm, geoWindowMin, velocityWindowMin, velocityMaxClaims },
 //   }
 //   claim = { member, facilityCode, claimType, createdAt }  // createdAt: epoch ms
 
-export const DEFAULT_THRESHOLDS = { dupWindowMin: 30, geoMinKm: 10, geoWindowMin: 30 };
+export const DEFAULT_THRESHOLDS = {
+  dupWindowMin: 30,
+  geoMinKm: 10,
+  geoWindowMin: 30,
+  velocityWindowMin: 1440, // 24h
+  velocityMaxClaims: 3,
+};
 
 const MIN_MS = 60 * 1000;
 
@@ -106,5 +112,29 @@ export function geoTimeImpossible(claim, ctx) {
   return { name: 'geoTimeImpossible', triggered: false, reason: null, confidence: 0.95 };
 }
 
+// RED FLAG: too many claims from one member inside the velocity window, across
+// any facility or type. Catches a member spraying claims to double-dip, which
+// the per-facility duplicate rule misses. Counts prior in-window claims plus the
+// one under evaluation.
+export function amountVelocity(claim, ctx) {
+  const { velocityWindowMin, velocityMaxClaims } = thresholds(ctx);
+  const windowMs = velocityWindowMin * MIN_MS;
+  const recent = (ctx.priorClaims || []).filter((p) => {
+    if (p.member !== claim.member) return false;
+    const dt = claim.createdAt - p.createdAt;
+    return dt >= 0 && dt <= windowMs;
+  });
+  const count = recent.length + 1; // include the claim under evaluation
+  const triggered = count >= velocityMaxClaims;
+  return {
+    name: 'amountVelocity',
+    triggered,
+    reason: triggered
+      ? `High claim velocity: ${count} claims from this member within ${Math.round(velocityWindowMin / 60)}h.`
+      : null,
+    confidence: 0.8,
+  };
+}
+
 // Order matters: geo leads, because it is the most legible reason when several fire.
-export const RULES = [geoTimeImpossible, missingAdmission, duplicateClaim];
+export const RULES = [geoTimeImpossible, missingAdmission, duplicateClaim, amountVelocity];

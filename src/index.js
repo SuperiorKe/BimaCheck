@@ -6,6 +6,8 @@ import { setHandler } from './queue.js';
 import { processClaim } from './worker.js';
 import { listClaims } from './db.js';
 import { b2cResult, b2cTimeout } from './mpesa.js';
+import { runBenchmark } from './engine/backtest.js';
+import { auditCsv } from './audit.js';
 import { dashboardHtml } from './dashboard.js';
 
 setHandler(processClaim);
@@ -18,6 +20,19 @@ app.post('/ussd', ussdHandler);
 app.post('/b2c/result', b2cResult);
 app.post('/b2c/timeout', b2cTimeout);
 app.get('/api/claims', (_req, res) => res.json(listClaims()));
+// On-demand fraud benchmark: runs the live engine over a labelled synthetic set
+// and returns measured catch rate, false-positive rate, value blocked, latency.
+app.get('/api/backtest', (req, res) => {
+  const n = Math.min(Math.max(Number(req.query.n) || 1000, 100), 5000);
+  const seed = Number(req.query.seed) || 1;
+  res.json(runBenchmark({ n, seed }));
+});
+// Decision ledger as CSV: a named, timed, IRA-defensible record of every claim.
+app.get('/api/audit.csv', (_req, res) => {
+  res.set('Content-Type', 'text/csv; charset=utf-8');
+  res.set('Content-Disposition', 'attachment; filename="bimacheck-audit.csv"');
+  res.send(auditCsv(listClaims()));
+});
 app.get('/', (_req, res) => res.type('html').send(dashboardHtml));
 
 app.listen(config.port, () => {

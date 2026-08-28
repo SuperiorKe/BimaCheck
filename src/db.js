@@ -27,6 +27,9 @@ db.exec(`
     status        TEXT    NOT NULL DEFAULT 'PENDING',
     decision      TEXT,
     reason        TEXT,
+    rule          TEXT,
+    confidence    REAL,
+    decided_at    INTEGER,
     mpesa_status  TEXT,
     conversation_id TEXT
   );
@@ -43,6 +46,9 @@ function rowToClaim(row) {
     status: row.status,
     decision: row.decision,
     reason: row.reason,
+    rule: row.rule,
+    confidence: row.confidence,
+    decidedAt: row.decided_at,
     mpesaStatus: row.mpesa_status,
     conversationId: row.conversation_id,
   };
@@ -71,9 +77,13 @@ export function priorClaims(member, beforeTs) {
     .map(rowToClaim);
 }
 
-export function setDecision(id, decision, reason) {
-  db.prepare(`UPDATE claims SET status = ?, decision = ?, reason = ? WHERE id = ?`)
-    .run(decision, decision, reason ?? null, id);
+// Record the engine's decision plus the named lead rule and its confidence, and
+// stamp the decision time. rule/confidence are null for a clean approval. This
+// is what the audit export reads, so the regulator sees a named, timed decision.
+export function setDecision(id, decision, reason, rule = null, confidence = null) {
+  db.prepare(
+    `UPDATE claims SET status = ?, decision = ?, reason = ?, rule = ?, confidence = ?, decided_at = ? WHERE id = ?`
+  ).run(decision, decision, reason ?? null, rule ?? null, confidence ?? null, Date.now(), id);
 }
 
 // Single-shot guard: transition to PAID at most once. Returns true only for the
@@ -82,6 +92,30 @@ export function setDecision(id, decision, reason) {
 export function markPaid(id) {
   const r = db
     .prepare(`UPDATE claims SET status = 'PAID', mpesa_status = 'PAID' WHERE id = ? AND status <> 'PAID'`)
+    .run(id);
+  return r.changes > 0;
+}
+
+// The live B2C fallback fired but Daraja has not confirmed. Record the payout as
+// ASSUMED (dispatched, unconfirmed) without claiming PAID. Never downgrades a
+// confirmed payout, and is single-shot. Returns true only for the call that set
+// ASSUMED.
+export function markAssumed(id) {
+  const r = db
+    .prepare(
+      `UPDATE claims SET mpesa_status = 'ASSUMED'
+         WHERE id = ? AND status <> 'PAID'
+           AND (mpesa_status IS NULL OR mpesa_status NOT IN ('PAID', 'ASSUMED'))`
+    )
+    .run(id);
+  return r.changes > 0;
+}
+
+// A Daraja failure or timeout for a payout that was never confirmed. Marks it
+// FAILED without contradicting a claim that already reached PAID.
+export function markFailed(id) {
+  const r = db
+    .prepare(`UPDATE claims SET mpesa_status = 'FAILED' WHERE id = ? AND status <> 'PAID'`)
     .run(id);
   return r.changes > 0;
 }

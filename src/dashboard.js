@@ -1,6 +1,9 @@
 // Cut-first insurer console: a self-contained page that polls /api/claims and
 // renders each claim's decision, the rule that fired, its reason, and payout
-// status. No build step, no framework, no external assets. Served at GET /.
+// status. A benchmark panel runs /api/backtest on demand and shows the engine's
+// measured catch rate, false-positive rate, value blocked, and decision latency.
+// A Download audit link exports the decision ledger as CSV (/api/audit.csv).
+// No build step, no framework, no external assets. Served at GET /.
 export const dashboardHtml = `<!doctype html>
 <html lang="en">
 <head>
@@ -31,6 +34,25 @@ export const dashboardHtml = `<!doctype html>
   .counts span { font:400 12px/1 var(--sans); color:var(--mut); }
   .counts b { font:600 13px/1 var(--mono); color:var(--txt); font-variant-numeric:tabular-nums; }
   main { padding:16px 20px; }
+  .bench { border:1px solid var(--line); background:var(--panel); border-radius:6px;
+           padding:14px 16px; margin-bottom:16px; }
+  .bench-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .bench button { font:600 11px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase;
+                  color:var(--bg); background:var(--paid); border:0; border-radius:4px;
+                  padding:8px 14px; cursor:pointer; }
+  .bench button:disabled { opacity:.5; cursor:default; }
+  .audit-link { font:600 11px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase;
+                color:var(--txt); background:transparent; border:1px solid var(--line);
+                border-radius:4px; padding:7px 13px; text-decoration:none; }
+  .audit-link:hover { border-color:var(--mut); }
+  .bench-cap { color:var(--mut); font:300 12px/1.4 var(--sans); }
+  .metrics { display:flex; flex-wrap:wrap; gap:28px; margin-top:14px; }
+  .metric { display:flex; flex-direction:column; gap:4px; }
+  .m-val { font:600 22px/1 var(--mono); color:var(--txt); font-variant-numeric:tabular-nums; }
+  .m-val.good { color:var(--paid); }
+  .m-val.warn { color:var(--held); }
+  .m-lab { font:400 11px/1 var(--mono); letter-spacing:.06em; text-transform:uppercase; color:var(--mut); }
+  .byrule { margin-top:12px; color:var(--dim); font:400 12px/1.5 var(--mono); }
   table { width:100%; border-collapse:collapse; }
   thead th { text-align:left; padding:9px 16px 9px 20px; border-bottom:1px solid var(--line);
              background:var(--panel); color:var(--mut); font:600 11px/1 var(--mono);
@@ -73,6 +95,21 @@ export const dashboardHtml = `<!doctype html>
   </div>
 </header>
 <main>
+  <section class="bench">
+    <div class="bench-head">
+      <button id="run-bench" type="button">Run benchmark</button>
+      <a class="audit-link" href="/api/audit.csv" download="bimacheck-audit.csv">Download audit</a>
+      <span class="bench-cap" id="bench-cap">Measure the engine on a labelled synthetic benchmark.</span>
+    </div>
+    <div class="metrics" id="metrics" hidden>
+      <div class="metric"><span class="m-val good" id="m-catch">0</span><span class="m-lab">fraud caught</span></div>
+      <div class="metric"><span class="m-val warn" id="m-fp">0</span><span class="m-lab">false holds</span></div>
+      <div class="metric"><span class="m-val" id="m-blocked">0</span><span class="m-lab">value blocked</span></div>
+      <div class="metric"><span class="m-val" id="m-latency">0</span><span class="m-lab">median decision</span></div>
+      <div class="metric"><span class="m-val" id="m-total">0</span><span class="m-lab">claims tested</span></div>
+    </div>
+    <div class="byrule" id="byrule" hidden></div>
+  </section>
   <table>
     <thead><tr>
       <th>#</th><th>Time</th><th>Member</th><th>Facility</th>
@@ -110,6 +147,35 @@ export const dashboardHtml = `<!doctype html>
       '</tr>'
     ).join('');
   }
+
+  const kes = (n) => 'KES ' + Number(n).toLocaleString();
+  async function runBench() {
+    const btn = document.getElementById('run-bench');
+    btn.disabled = true; btn.textContent = 'Running...';
+    try {
+      const r = await (await fetch('/api/backtest')).json();
+      document.getElementById('m-catch').textContent = r.catchRatePct + '%';
+      document.getElementById('m-fp').textContent = r.falsePositiveRatePct + '%';
+      document.getElementById('m-blocked').textContent = kes(r.fraudValueBlockedKes);
+      document.getElementById('m-latency').textContent = r.medianDecisionMs + ' ms';
+      document.getElementById('m-total').textContent = Number(r.total).toLocaleString();
+      document.getElementById('metrics').hidden = false;
+      const rules = Object.entries(r.byRule).map((e) => e[0] + ' ' + e[1]).join('    ');
+      const br = document.getElementById('byrule');
+      br.textContent = 'caught ' + r.caught + ' of ' + r.fraud + ' fraud, ' + r.missed +
+        ' missed, ' + r.falseHolds + ' false holds    /    ' + rules;
+      br.hidden = false;
+      document.getElementById('bench-cap').textContent =
+        'Synthetic benchmark of ' + Number(r.total).toLocaleString() +
+        ' labelled claims. Real rates come from a pilot on your data.';
+    } catch (e) {
+      document.getElementById('bench-cap').textContent = 'Benchmark failed to run.';
+    } finally {
+      btn.disabled = false; btn.textContent = 'Run benchmark';
+    }
+  }
+  document.getElementById('run-bench').addEventListener('click', runBench);
+
   load();
   setInterval(load, 2000);
 </script>

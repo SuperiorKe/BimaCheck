@@ -9,7 +9,7 @@ import {
   getClaimIdByConversation,
   __resetClaims,
 } from '../src/db.js';
-import { confirmPayout, requestPayout, b2cResult, b2cTimeout, darajaTransport } from '../src/mpesa.js';
+import { confirmPayout, assumePayout, requestPayout, b2cResult, b2cTimeout, darajaTransport } from '../src/mpesa.js';
 
 const M = '254708374149';
 beforeEach(() => {
@@ -36,16 +36,48 @@ test('confirmPayout is single-shot: pays once, second call is a no-op', async ()
   assert.equal(await confirmPayout(id), false);
 });
 
-test('CRITICAL: late result-callback after the fallback does not pay/notify twice', async () => {
+test('CRITICAL: 8s fallback assumes (not PAID); a confirming callback promotes to PAID once', async () => {
   const id = approvedClaim();
-  // 8s fallback fired first and confirmed
-  assert.equal(await confirmPayout(id), true);
-  // the real Daraja result callback arrives afterwards
   linkConversation(id, 'CONV-LATE');
+  // The 8s fallback fires before any Daraja callback: the payout is ASSUMED, not paid.
+  assert.equal(await assumePayout(id), true);
+  let c = getClaim(id);
+  assert.equal(c.status, 'APPROVED');      // never claims PAID on an unconfirmed payout
+  assert.equal(c.mpesaStatus, 'ASSUMED');
+  // The real Daraja result callback then confirms the transfer.
   await b2cResult({ body: { Result: { ResultCode: 0, ConversationID: 'CONV-LATE' } } }, mockRes());
-  assert.equal(getClaim(id).status, 'PAID');
-  // a further confirm still does nothing — single-shot held
+  c = getClaim(id);
+  assert.equal(c.status, 'PAID');
+  assert.equal(c.mpesaStatus, 'PAID');
+  // A duplicate late callback cannot pay or notify twice.
   assert.equal(await confirmPayout(id), false);
+});
+
+test('CRITICAL: an assumed payout that later FAILS is marked FAILED, never PAID', async () => {
+  const id = approvedClaim();
+  linkConversation(id, 'CONV-ASSUME-FAIL');
+  assert.equal(await assumePayout(id), true);
+  assert.equal(getClaim(id).mpesaStatus, 'ASSUMED');
+  await b2cResult(
+    { body: { Result: { ResultCode: 1, ResultDesc: 'cancelled', ConversationID: 'CONV-ASSUME-FAIL' } } },
+    mockRes()
+  );
+  const c = getClaim(id);
+  assert.notEqual(c.status, 'PAID');       // the contradiction the old fallback caused is gone
+  assert.equal(c.mpesaStatus, 'FAILED');
+});
+
+test('a failure callback never downgrades an already-confirmed PAID claim', async () => {
+  const id = approvedClaim();
+  linkConversation(id, 'CONV-PAID-THEN-FAIL');
+  assert.equal(await confirmPayout(id), true); // confirmed paid
+  await b2cResult(
+    { body: { Result: { ResultCode: 1, ResultDesc: 'late failure', ConversationID: 'CONV-PAID-THEN-FAIL' } } },
+    mockRes()
+  );
+  const c = getClaim(id);
+  assert.equal(c.status, 'PAID');
+  assert.equal(c.mpesaStatus, 'PAID');     // markFailed guard refuses to contradict
 });
 
 test('b2cResult success -> claim PAID', async () => {
