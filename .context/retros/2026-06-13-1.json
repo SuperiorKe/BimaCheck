@@ -1,0 +1,54 @@
+{
+  "date": "2026-06-13",
+  "window": "full-build",
+  "window_span": "2026-05-31 to 2026-06-02",
+  "ref_analyzed": "local main (8 commits ahead of origin/main)",
+  "note": "Default 7d window was empty (last commit 2026-06-02, 11 days before run). Ran over the full hackathon build window instead.",
+  "metrics": {
+    "subsystems_shipped": 6,
+    "commits": 16,
+    "weighted_commits": 47,
+    "contributors": 1,
+    "prs_merged": 0,
+    "insertions": 2802,
+    "deletions": 52,
+    "net_loc": 2750,
+    "logical_source_loc": 740,
+    "generated_loc_excluded": 844,
+    "test_loc": 389,
+    "test_ratio": 0.34,
+    "active_days": 3,
+    "sessions": 3,
+    "deep_sessions": 1,
+    "avg_session_minutes": 45,
+    "loc_per_session_hour": 1200,
+    "feat_pct": 0.50,
+    "style_pct": 0.25,
+    "chore_pct": 0.19,
+    "fix_pct": 0.06,
+    "peak_hour": 22,
+    "ai_assisted_commits": 11
+  },
+  "authors": {
+    "superior": { "commits": 16, "insertions": 2802, "deletions": 52, "test_ratio": 0.34, "top_area": "src/" }
+  },
+  "version_range": null,
+  "streak_days": 0,
+  "sprint_streak_days": 3,
+  "tweetable": "BimaCheck sprint (May 31 to Jun 2): 16 commits, 6 subsystems, 740 lines of source + 389 of tests (34% test ratio), 1 fix in 16. All shipped 8pm to midnight. Solo.",
+  "test_health": {
+    "total_test_files": 7,
+    "test_blocks": 35,
+    "tests_added_this_period": 35,
+    "regression_test_commits": 0,
+    "test_files_changed": 7
+  },
+  "backlog": {
+    "total_open": 2,
+    "p0_p1": 0,
+    "p2": 0,
+    "stretch_deferred": 2,
+    "completed_this_period": 0,
+    "added_this_period": 1
+  }
+}

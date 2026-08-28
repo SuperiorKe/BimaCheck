@@ -6,21 +6,29 @@ asks for.
 
 ## The 90-second script
 
-1. **(0-15s) The problem.** "KES 11 billion vanished from Kenya's SHA fund to claims fraud in
-   six months. Insurers respond by making everyone wait, so honest people pay for fraudsters.
-   We fix both."
-2. **(15-50s) The honest claimant, paid.** Dial the USSD shortcode on a real phone and file the
+_Repositioned 2026-06-20 around the payout wedge. Fraud detection is now table stakes in this
+market: SHA runs its own engine, Old Mutual has OmiCare, Curacel sells it. The differentiator is
+instant, safe payout to the feature-phone member, made defensible by named rules. Lead with that._
+
+1. **(0-12s) The wedge.** "Everyone here can now detect fraud. SHA's own engine flagged 11 billion
+   shillings of it in six months. The unsolved problem is the other side: paying the honest member
+   in seconds, on a feature phone, without paying a fraudster by mistake. That is what BimaCheck
+   does."
+2. **(12-50s) The honest claimant, paid.** Dial the USSD shortcode on a real phone and file the
    clean claim. USSD returns "received, processing" at once. Seconds later the phone shows the
-   M-Pesa "received KES 2,000" SMS plus the approval SMS. "Honest claimant, paid in seconds, on
-   a feature phone, over M-Pesa B2C, the correct disbursement rail."
-3. **(50-70s) The fraudster, held.** File the seeded twin. SMS: "under review, same member,
-   44km away, 5 minutes ago." "Not denied. Held for a human, with a reason we can defend to the
-   regulator. Human in the loop, never auto-deny."
-4. **(70-90s) The evidence.** On the dashboard, press **Run benchmark**: about 89% of fraud
-   caught, about 5% false holds, KES 488,000 blocked per thousand claims, decisions in under a
-   millisecond, every catch tied to a named rule. Then press **Download audit** and hold up the
-   CSV. "Deterministic, auditable, IRA-defensible. We measure the catch rate and we can prove
-   every single decision. That is what a black-box model cannot give a regulator."
+   M-Pesa "received KES 2,000" SMS and the approval SMS. "An honest member, paid in seconds, on a
+   feature phone, over M-Pesa B2C, the rail the unbanked already use. No app, no bank account, no
+   waiting weeks for a cheque."
+3. **(50-70s) Why that speed is safe.** File the seeded twin. SMS: "under review, same member,
+   44km away, 5 minutes ago." "The same engine that paid the honest claim in seconds holds this
+   one for a human, with a named reason: one member, two facilities, five minutes apart. Held for
+   review, never auto-denied."
+4. **(70-90s) The proof a regulator accepts.** On the dashboard, press **Run benchmark**: about
+   89% of fraud caught, about 5% false holds, KES 488,000 blocked per thousand claims, every catch
+   tied to a named rule, each decision in under a millisecond. Then press **Download audit** and
+   hold up the CSV. "Named deterministic rules, every decision showing its rule and its reason. A
+   black-box model cannot show the IRA that. The audit trail is what makes instant payout safe to
+   offer."
 
 ## The line for the insurer in the room
 
