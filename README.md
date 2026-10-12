@@ -18,7 +18,7 @@ KES ~11bn was lost from Kenya's SHA fund to claims fraud in six months. Insurers
 
 ## Status
 
-Feature-complete. USSD intake → decision engine → SMS, with M-Pesa B2C payout and an insurer dashboard. 34 tests passing. Design and architecture live in [`docs/DESIGN.md`](docs/DESIGN.md) and [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md).
+Feature-complete. USSD intake → decision engine → SMS, with M-Pesa B2C payout and an insurer dashboard. 35 tests passing. Design and architecture live in [`docs/DESIGN.md`](docs/DESIGN.md) and [`docs/BUILD_PLAN.md`](docs/BUILD_PLAN.md).
 
 ## Running it
 
@@ -26,7 +26,7 @@ Requires **Node 24+** (uses built-in `node:sqlite`, `node:test`, and `process.lo
 
 ```bash
 npm install
-npm test                 # 34 tests
+npm test                 # 35 tests
 cp .env.example .env      # leave blank for offline dry-run; fill for live AT + Daraja
 npm start                 # http://localhost:3000  (dashboard)
 ```
